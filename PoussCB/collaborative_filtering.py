@@ -1,8 +1,8 @@
 # coding=utf-8
 import numpy as np
 
-from pyreco.biases import OverallBias
-from pyreco.evaluations import RmseEvaluation
+from PoussCB.biases import OverallBias
+from PoussCB.evaluations import RmseEvaluation
 
 
 class StochasticGradientMatrixFactorization(OverallBias):
@@ -123,7 +123,7 @@ class StochasticGradientMatrixFactorization(OverallBias):
             self.learning_rate = self.eta_0 / float(1 + epoch)
             self.one_epoch(training_reviews)
             training_rmse, validation_rmse, test_rmse = evaluation.evaluate(self)
-            print u"RMSE @ epoch % 4d: %.5f (training), %.5f (validation)" % (epoch, training_rmse, validation_rmse)
+            print("RMSE @ epoch {}: {} (training), {} (validation)".format(epoch, training_rmse, validation_rmse))
 
     def predict(self, user, item):
         u"""

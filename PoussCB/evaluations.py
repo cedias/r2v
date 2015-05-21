@@ -28,9 +28,10 @@ class RmseEvaluation:
         """
         rmse = None
         if reviews is not None:
-            deltas = map(lambda r: recommender_system.predict(r.get_user(), r.get_item()) - r.get_rating(), reviews)
-            squared_deltas = map(lambda x: x * x, deltas)
+            deltas = [recommender_system.predict(r.get_user(), r.get_item()) - r.get_rating() for r in reviews]
+            squared_deltas = [x*x for x in deltas]
             rmse = np.sqrt(np.mean(squared_deltas))
+
         return rmse
 
     def evaluate(self, recommender_system):

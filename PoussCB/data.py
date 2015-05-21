@@ -61,6 +61,31 @@ def load_simple_gz(filename, load_texts=False):
     return reviews
 
 
+def load_from_database(db, load_texts=False):
+    u"""
+    Utility function that loads train and test reviews from a given database
+    :param filename: the path to the file to load (must be a gzip file).
+    :param load_texts: if True, then texts are loaded along with other parameters.
+    :return: the list of reviews stored in the file.
+    """
+    train_reviews = []
+    test_reviews = []
+    for item,user,review,rating,timestamp,test  in db.getFullReviews():
+
+        if test == 0:
+            if load_texts:
+                train_reviews.append(TextReview(user, item, float(rating), int(timestamp), review))
+            else:
+                train_reviews.append(Review(user, item, float(rating), int(timestamp)))
+        else:
+            if load_texts:
+                test_reviews.append(TextReview(user, item, float(rating), int(timestamp), review))
+            else:
+                test_reviews.append(Review(user, item, float(rating), int(timestamp)))
+
+    return train_reviews,test_reviews
+
+
 def rescale_ratings(reviews):
     u"""
     Utility function that rescales in place the ratings from [1, 5] to [-1, 1].

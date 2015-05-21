@@ -143,5 +143,5 @@ class Database(object):
 
     def getFullReviews(self):
         c = self.con.cursor()
-        c.execute("SELECT item,user,review,rating,r_timestamp FROM reviews")
+        c.execute("SELECT item,user,review,rating,r_timestamp,test FROM reviews")
         return c.fetchall()

@@ -1,10 +1,10 @@
 # coding=utf-8
 import numpy as np
 
-from pyreco.biases import OverallBias
-from pyreco.collaborative_filtering import StochasticGradientMatrixFactorization
-from pyreco.evaluations import RmseEvaluation
-from pyreco.texts import TopicExtractor
+from PoussCB.biases import OverallBias
+from PoussCB.collaborative_filtering import StochasticGradientMatrixFactorization
+from PoussCB.evaluations import RmseEvaluation
+from PoussCB.texts import TopicExtractor
 
 
 class UnifiedRecsys(StochasticGradientMatrixFactorization, TopicExtractor):
@@ -135,5 +135,5 @@ class UnifiedRecsys(StochasticGradientMatrixFactorization, TopicExtractor):
             self.one_unified_epoch(training_reviews, training_texts, training_thetas)
             training_rmse, validation_rmse, test_rmse = evaluation.evaluate(self)
             loss = self.compute_loss(training_texts, training_thetas)
-            print u"Perf @ epoch % 4d: %.5f (training), %.5f (validation), %.5f (loss)" % (
-                epoch, training_rmse, validation_rmse, loss)
+            print("Perf @ epoch % {}: {} (training), {} (validation), {} (loss)".format(
+                epoch, training_rmse, validation_rmse, loss))

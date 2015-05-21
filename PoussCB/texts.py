@@ -80,5 +80,5 @@ class TopicExtractor:
         for epoch in range(self.epochs):
             self.update_thetas(text_matrix, thetas)
             self.update_topics(text_matrix, thetas)
-            print u"Loss @ epoch % 4d: %.5f" % (epoch, (self.compute_loss(text_matrix, thetas)))
+            print("Loss @ epoch {}: {}".format (epoch, (self.compute_loss(text_matrix, thetas))))
         return thetas
