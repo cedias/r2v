@@ -86,9 +86,9 @@ class Database(object):
 
     def getUserReviews(self, user, test):
         c = self.con.cursor()
-        if test == True:
+        if test is True:
             c.execute("SELECT item,rating,review FROM reviews WHERE user = {} and test".format(user))
-        if test == False:
+        elif test is False:
             c.execute("SELECT item,rating,review FROM reviews WHERE user = {} and not test".format(user))
         else:
             raise AttributeError("Argument test is either True or False: here test is {}".format(test))
@@ -113,9 +113,9 @@ class Database(object):
 
     def getItemReviews(self, item, test):
         c = self.con.cursor()
-        if test == True:
+        if test is True:
             c.execute("SELECT user,rating,review FROM reviews WHERE item = {} and test".format(item))
-        if test == False:
+        elif test is False:
             c.execute("SELECT user,rating,review FROM reviews WHERE item = {} and not test".format(item))
         else:
             raise AttributeError("Argument test is either True or False: here test is {}".format(test))
@@ -130,11 +130,11 @@ class Database(object):
 
     def getAllReviews(self, test):
         c = self.con.cursor()
-        if test == True:
+        if test is True:
             c.execute("SELECT item,user,rating FROM reviews WHERE test")
-        if test == False:
+        elif test is False:
             c.execute("SELECT item,user,rating FROM reviews WHERE not test")
-        if test == None:
+        elif test == None:
             c.execute("SELECT item,user,rating FROM reviews")
         else:
             raise AttributeError("Argument test is either True or False or None: here test is {}".format(test))

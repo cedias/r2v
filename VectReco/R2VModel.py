@@ -7,6 +7,7 @@ class R2VModel(object):
         self.model = d2vModel
         self.model.init_sims()
         self._buildIndexs()
+        self.vocab = self.model.vocab
 
     @staticmethod
     def from_w2v_text(text,binary=True):
@@ -73,3 +74,13 @@ class R2VModel(object):
                 return [(self.model.index2word[limits[limit][sim]], float(dist[sim])) for sim in best]
             else:
                 return [(self.model.index2word[limits[limit][sim]], float(dist[sim])) for sim in best][:topn]
+
+
+    def most_similar_rating(self,vect):
+        return float(self.most_similar(vect, limit="rating", topn=1)[0][0].split("_")[1])
+
+    def most_similar_user(self,vect):
+        return int(self.most_similar(vect, limit="user", topn=1)[0][0].split("_")[1])
+
+    def most_similar_item(self,vect):
+        return int(self.most_similar(vect, limit="item", topn=1)[0][0].split("_")[1])
