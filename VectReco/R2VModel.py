@@ -13,7 +13,6 @@ class R2VModel(object):
         d2v = Doc2Vec.load_word2vec_format(text,binary=binary)
         return R2VModel(d2v)
 
-
     def __getitem__(self, key):
         return self.model[key]
 
@@ -74,10 +73,3 @@ class R2VModel(object):
                 return [(self.model.index2word[limits[limit][sim]], float(dist[sim])) for sim in best]
             else:
                 return [(self.model.index2word[limits[limit][sim]], float(dist[sim])) for sim in best][:topn]
-
-
-
-
-
-
-
