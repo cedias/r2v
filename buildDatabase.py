@@ -1,5 +1,4 @@
 from VectReco.Database import Database
-from VectReco.R2VModel import R2VModel
 from VectReco.DatasetIterator import AmazonIterator,BeeradvocateIterator,RatebeerIterator
 import argparse
 

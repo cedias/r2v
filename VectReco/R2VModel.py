@@ -8,54 +8,76 @@ class R2VModel(object):
         self.model.init_sims()
         self._buildIndexs()
 
-    def _buildIndex(self):
-        self.user_indexs = [i for i, word in enumerate(self.model.index2word) if len(word) > 2 and word[0] == "u" and word[1] == "_"]
-        self.item_indexs = [i for i, word in enumerate(self.model.index2word) if len(word) > 2 and word[0] == "i" and word[1] == "_" and len(word.split("_")) == 2 ]
-        self.review_indexs = [i for i, word in enumerate(self.model.index2word) if len(word) > 2 and word[0] == "i" and word[1] == "_" and len(word.split("_")) > 2 ]
-        self.sent_indexs = [i for i, word in enumerate(self.model.index2word) if len(word) > 2 and word[0] == "s" and word[1] == "_"]
-        self.word_indexs = [i for i, word in enumerate(self.model.index2word) if len(word) < 2 or word[1] != "_"]
-        self.rating_indexs = [i for i, word in enumerate(self.model.index2word) if len(word) > 2 and word[0] == "r" and word[1] == "_"]
+    @staticmethod
+    def from_w2v_text(text,binary=True):
+        d2v = Doc2Vec.load_word2vec_format(text,binary=binary)
+        return R2VModel(d2v)
 
-        for i,word in enumerate(self.model.index2word):
+
+    def __getitem__(self, key):
+        return self.model[key]
+
+    def _buildIndexs(self):
+        self.user_indexs = []
+        self.item_indexs =  []
+        self.review_indexs = []
+        self.sent_indexs =  []
+        self.word_indexs =  []
+        self.rating_indexs =  []
+
+        for i,word in enumerate(self.model.index2word): # O(n)
             if len(word) < 2 or word[1] != "_":
-                word.indexs.append()
+                self.word_indexs.append(i)
+                continue
+            elif word[0] == 'u':
+                self.user_indexs.append(i)
+                continue
+            elif word[0] == 'i':
+                if len(word.split("_")) == 2:
+                    self.item_indexs.append(i)
+                else:
+                    self.review_indexs.append(i)
+                continue
+            elif word[0] == 'r':
+                self.rating_indexs.append(i)
+                continue
+            elif word[0] == 's':
+                self.sent_indexs.append(i)
+                continue
+            else:
+                raise ValueError("Word {} not classified by indexer".format(word))
 
-        pass
 
-    def most_similar(model,vect, limit="all", topn=100):
-        pass
-        # limits = {"all": True, "words": True, "sent": "s", "users": "u", "items": "i", "rating": "r", "reviews": True}
-        # if limit not in limits.keys():
-        #     print("limit not in {}".format(limits.keys()))
-        #     return None
-        #
-        # if limit == "all":
-        #     dist = np.dot(model.syn0norm, vect)
-        #     best = np.argsort(dist)[::-1]
-        #
-        #     if topn is not None:
-        #         return [(model.index2word[sim], float(dist[sim])) for sim in best][1:topn + 1]
-        #     else:
-        #         return [(model.index2word[sim], float(dist[sim])) for sim in best]
-        #
-        # if limit == "rating":
-        #     if topn is not None:
-        #         return [(model.index2word[sim], float(dist[sim])) for sim in best if len(model.index2word[sim]) > 2 and model.index2word[sim][1] == '_' and model.index2word[sim][0] == limits[limit]][0:topn]
-        #     else:
-        #         return [(model.index2word[sim], float(dist[sim])) for sim in best if len(model.index2word[sim]) > 2 and model.index2word[sim][1] == '_'and model.index2word[sim][0] == limits[limit]]
-        #
-        #
-        # if limit == "words":
-        #     if topn is not None:
-        #         return [(model.index2word[sim], float(dist[sim])) for sim in best if len(model.index2word[sim]) < 2 or model.index2word[sim][1] != '_'][1:topn + 1]
-        #     else:
-        #         return [(model.index2word[sim], float(dist[sim])) for sim in best if len(model.index2word[sim]) < 2 or model.index2word[sim][1] != '_']
-        #
-        # else:
-        #     if topn is not None:
-        #         return [(model.index2word[sim], float(dist[sim])) for sim in best if len(model.index2word[sim]) > 2 and model.index2word[sim][1] == '_' and model.index2word[sim][0] == limits[limit]][1:topn + 1]
-        #     else:
-        #         return [(model.index2word[sim], float(dist[sim])) for sim in best if len(model.index2word[sim]) > 2 and model.index2word[sim][1] == '_'and model.index2word[sim][0] == limits[limit]]
-        #
-        #
-        #
+    def most_similar(self,vect, limit="all", topn=100):
+        limits = {"all": True, "words": self.word_indexs, "sent": self.sent_indexs, "users": self.user_indexs,
+                  "items": self.item_indexs, "rating": self.rating_indexs, "reviews": self.review_indexs}
+
+        if limit not in limits.keys():
+            print("limit not in {}".format(limits.keys()))
+            return None
+
+        if limit == "all":
+            dist = np.dot(self.model.syn0norm, vect)
+            best = np.argsort(dist)[::-1]
+
+            if topn is not None:
+                return [(self.model.index2word[sim], float(dist[sim])) for sim in best][1:topn + 1]
+            else:
+                return [(self.model.index2word[sim], float(dist[sim])) for sim in best]
+        else:
+            subset = self.model.syn0norm[limits[limit]]
+
+            dist = np.dot(subset, vect)
+            best = np.argsort(dist)[::-1]
+
+            if topn is None:
+                return [(self.model.index2word[limits[limit][sim]], float(dist[sim])) for sim in best]
+            else:
+                return [(self.model.index2word[limits[limit][sim]], float(dist[sim])) for sim in best][:topn]
+
+
+
+
+
+
+
