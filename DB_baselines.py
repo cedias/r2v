@@ -7,12 +7,14 @@ import PoussCB.collaborative_filtering
 import PoussCB.texts
 import PoussCB.unified_recsys
 from VectReco.Database import Database
+from random import shuffle
 
 
 def load_data(filename):
     print("Loading data")
     db = Database(filename)
     training_reviews, test_reviews = PoussCB.data.load_from_database(db, load_texts=True)
+    shuffle(training_reviews)
     training_reviews, validation_reviews = PoussCB.data.split_sets(training_reviews)
     evaluation = PoussCB.evaluations.RmseEvaluation(training_reviews, validation_reviews, test_reviews)
     return evaluation, training_reviews, validation_reviews

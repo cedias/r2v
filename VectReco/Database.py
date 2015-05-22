@@ -77,7 +77,7 @@ class Database(object):
     def getUserBias(self, user):
         c = self.con.cursor()
         c.execute("SELECT avg(rating) as bias FROM reviews WHERE user = {} and not test group by user".format(user))
-        return c.fetchone()
+        return c.fetchone()[0]
 
     def getUsersBias(self):
         c = self.con.cursor()
@@ -104,7 +104,7 @@ class Database(object):
     def getItemBias(self, item):
         c = self.con.cursor()
         c.execute("SELECT avg(rating) as bias FROM reviews WHERE item = {} and not test group by item".format(item))
-        return c.fetchone()
+        return c.fetchone()[0]
 
     def getItemsBias(self):
         c = self.con.cursor()

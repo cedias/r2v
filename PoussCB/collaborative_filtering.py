@@ -119,6 +119,10 @@ class StochasticGradientMatrixFactorization(OverallBias):
         OverallBias.fit(self, training_reviews)
         self.initialize(training_reviews)
         evaluation = RmseEvaluation(training_reviews, validation_reviews, None)
+
+        training_rmse, validation_rmse, test_rmse = evaluation.evaluate(self)
+        print("RMSE @ epoch 0: {} (training), {} (validation), {} (test)".format( training_rmse, validation_rmse,test_rmse))
+
         for epoch in range(1, self.epochs + 1):
             self.learning_rate = self.eta_0 / float(1 + epoch)
             self.one_epoch(training_reviews)

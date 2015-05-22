@@ -50,7 +50,7 @@ class PredictionModel(object):
         pass
 
     def pretty_print(self):
-        pass
+        print("\n{} Prediction Model".format(self.__class__.__name__))
 
 
 class OverallBiasDB(PredictionModel):
@@ -76,23 +76,84 @@ class OverallBiasSpace(PredictionModel):
         print("\nOverall Space Bias: {}".format(self.space_avg))
 
 
-class ItemBias(PredictionModel):
+class ItemBiasDB(PredictionModel):
     def fit(self,model,db):
-        pass
+        self.db = db
+
+    def predict(self, user, item):
+        return self.db.getItemBias(item)
+
     def pretty_print(self):
         pass
 
-class UserBias(PredictionModel):
+class UserBiasDB(PredictionModel):
     def fit(self,model,db):
-        pass
+        self.db = db
+
+    def predict(self, user, item):
+        return self.db.getUserBias(user)
+
     def pretty_print(self):
         pass
 
-class Classic(PredictionModel):
+class ItemBiasSpace(PredictionModel):
     def fit(self,model,db):
-        pass
+        self.model = model
+
+    def predict(self, user, item):
+        return self.model.most_similar_rating(self.model["i_"+str(item)])
+
     def pretty_print(self):
         pass
+
+class UserBiasSpace(PredictionModel):
+    def fit(self,model,db):
+        self.model = model
+
+    def predict(self, user, item):
+        return self.model.most_similar_rating(self.model["u_"+str(user)])
+
+    def pretty_print(self):
+        pass
+
+class ClassicDB(PredictionModel):
+    def fit(self,model,db):
+        self.db = db
+        self.db_avg = db.getOverallBias()[0]
+
+    def predict(self, user, item):
+        return (self.db_avg + self.db.getUserBias(user) + self.db.getItemBias(item))/3.0
+
+    def pretty_print(self):
+        pass
+
+class ClassicSpace(PredictionModel):
+    def fit(self,model,db):
+        self.space_avg = np.mean([model.most_similar_rating(vect=((model["u_"+str(u)]+model["i_"+str(i)])/2)) for u, i, r in db.getAllReviews(test=False) if "u_"+str(u) in model.vocab and "i_"+str(i) in model.vocab])
+        self.model = model
+
+    def predict(self, user, item):
+        return (self.space_avg + self.model.most_similar_rating(self.model["u_"+str(user)]) + self.model.most_similar_rating(self.model["i_"+str(item)]) )/3.0
+
+    def pretty_print(self):
+        pass
+
+class ClassicMean(PredictionModel):
+    def fit(self,model,db):
+        self.space_avg = np.mean([model.most_similar_rating(vect=((model["u_"+str(u)]+model["i_"+str(i)])/2)) for u, i, r in db.getAllReviews(test=False) if "u_"+str(u) in model.vocab and "i_"+str(i) in model.vocab])
+        self.model = model
+        self.db = db
+        self.db_avg = db.getOverallBias()[0]
+
+
+    def predict(self, user, item):
+        a =  (self.db_avg + self.db.getUserBias(user) + self.db.getItemBias(item))/3.0
+        b =  (self.space_avg + self.model.most_similar_rating(self.model["u_"+str(user)]) + self.model.most_similar_rating(self.model["i_"+str(item)]) )/3.0
+        return  (a + b) /2.0
+
+    def pretty_print(self):
+        pass
+
 
 class CollabFiltering(PredictionModel):
     def fit(self,model,db):
