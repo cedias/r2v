@@ -37,7 +37,7 @@ class Metric(object):
     def evaluate(self):
         pass
     def pretty_print(self):
-        print("Value for {} is {}".format(self.__class__.__name__,self.value))
+        return "Value for {} is {}".format(self.__class__.__name__,self.value)
 
 class MSE(Metric):
     def evaluate(self):
@@ -54,7 +54,7 @@ class PredictionModel(object):
         pass
 
     def pretty_print(self):
-        print("\n{} Prediction Model".format(self.__class__.__name__))
+        return "\n{} Prediction Model".format(self.__class__.__name__)
 
 
 class OverallBiasDB(PredictionModel):
@@ -66,7 +66,7 @@ class OverallBiasDB(PredictionModel):
         return self.db_avg
 
     def pretty_print(self):
-        print("\nOverall DB Bias: {}".format(self.db_avg))
+        return "\nOverall DB Bias: {}".format(self.db_avg)
 
 
 class OverallBiasSpace(PredictionModel):
@@ -77,7 +77,7 @@ class OverallBiasSpace(PredictionModel):
         return  self.space_avg
 
     def pretty_print(self):
-        print("\nOverall Space Bias: {}".format(self.space_avg))
+        return "\nOverall Space Bias: {}".format(self.space_avg)
 
 
 class ItemBiasDB(PredictionModel):
