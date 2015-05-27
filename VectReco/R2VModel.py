@@ -1,4 +1,5 @@
 from gensim.models.doc2vec import Doc2Vec
+from gensim import matutils
 import numpy as np
 
 class R2VModel(object):
@@ -17,7 +18,7 @@ class R2VModel(object):
 
 
     def __getitem__(self, key):
-        return self.model[key] ##TODO: Verify if normalized ?
+        return self.model[key]
 
 
     def _buildIndexs(self):
@@ -55,6 +56,8 @@ class R2VModel(object):
         limits = {"all": True, "words": self.word_indexs, "sent": self.sent_indexs, "users": self.user_indexs,
                   "items": self.item_indexs, "rating": self.rating_indexs, "reviews": self.review_indexs}
 
+        vect = matutils.unitvec(vect)
+
         if limit not in limits.keys():
             print("limit not in {}".format(limits.keys()))
             return None
@@ -89,7 +92,7 @@ class R2VModel(object):
         return int(self.most_similar(vect, limit="item", topn=1)[0][0].split("_")[1])
 
     def most_similar_cache(self,vect):
-
+            vect = matutils.unitvec(vect)
             dist = np.dot(self._cache, vect)
             best = np.argsort(dist)[::-1]
             return [(self.model.index2word[self.user_indexs[sim]].split("_")[1], float(dist[sim])) for sim in best]
