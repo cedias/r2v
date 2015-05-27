@@ -8,14 +8,17 @@ class R2VModel(object):
         self.model.init_sims()
         self._buildIndexs()
         self.vocab = self.model.vocab
+        self._cache = None
 
     @staticmethod
     def from_w2v_text(text,binary=True):
         d2v = Doc2Vec.load_word2vec_format(text,binary=binary)
         return R2VModel(d2v)
 
+
     def __getitem__(self, key):
-        return self.model[key]
+        return self.model[key] ##TODO: Verify if normalized ?
+
 
     def _buildIndexs(self):
         self.user_indexs = []
@@ -47,8 +50,6 @@ class R2VModel(object):
             else:
                 raise ValueError("Word {} not classified by indexer".format(word))
 
-    def _buildUserSim(self):
-        self._usersSims = np.dot(self.model.syn0norm[self.user_indexs],self.model.syn0norm[self.user_indexs])
 
     def most_similar(self,vect, limit="all", topn=100):
         limits = {"all": True, "words": self.word_indexs, "sent": self.sent_indexs, "users": self.user_indexs,
@@ -87,7 +88,8 @@ class R2VModel(object):
     def most_similar_item(self,vect):
         return int(self.most_similar(vect, limit="item", topn=1)[0][0].split("_")[1])
 
+    def most_similar_cache(self,vect):
 
-    def most_similar_users(self,users,cache=True):
-        pass
-
+            dist = np.dot(self._cache, vect)
+            best = np.argsort(dist)[::-1]
+            return [(self.model.index2word[self.user_indexs[sim]].split("_")[1], float(dist[sim])) for sim in best]

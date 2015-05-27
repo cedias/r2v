@@ -14,13 +14,17 @@ class PredictionModelIterator(object):
         for mod in self.predmod:
             mod.fit(self.model,self.db)
 
-    def evaluate_all(self):
+    def evaluate_all(self,output=None):
         for mod in self.predmod:
             mod.pretty_print()
+            if output is not None:
+                output.write(mod.pretty_print()+"\n")
             for metric in self.metrics:
                 m = metric(mod,self.db)
                 m.evaluate()
                 m.pretty_print()
+                if output is not None:
+                    output.write(m.pretty_print()+"\n")
 
 
 
@@ -37,7 +41,7 @@ class Metric(object):
 
 class MSE(Metric):
     def evaluate(self):
-        diff = [self.pred_model.predict(item,user)-rating for item,user,rating in self.db.getAllReviews(test=True)]
+        diff = [self.pred_model.predict(item,user)-rating for item,user,rating in self.db.getAllReviews(test=True) if self.pred_model.predict(item,user) != None]
         sqDiff = [ x*x for x in diff]
         self.value = np.mean(sqDiff)
 
@@ -156,7 +160,64 @@ class ClassicMean(PredictionModel):
 
 
 class CollabFiltering(PredictionModel):
+
+    def __init__(self,k,verbose=True):
+        self.k = k
+        self.skipped = 0
+        self.cpt_test = 0
+        self.verbose = verbose
+        self._cache = None
+        self._usercache = None
+
     def fit(self,model,db):
-        pass
+        print("fitting collaborative filtering")
+        self.db = db
+        self.model = model
+        i=0
+
+        self.model._cache = self.model.model.syn0norm[self.model.user_indexs] #Hack
+
+        print("Collab filtering fitted")
+
+
+    def predict(self, user, item):
+        if self.verbose and (self.cpt_test+self.skipped)% 100 == 0:
+            print("Saw {} tests, skipped {} - Total {}/426305 ".format(self.cpt_test,self.skipped, self.cpt_test+self.skipped))
+        if "u_{}".format(user) not in self.model.vocab:
+            self.skipped += 1
+            return None
+        else:
+            sim_users = {suser:srating for suser,srating,_ in self.db.getItemReviews(item, test=False)} #note déja données
+            user_sims = self._cache_sim(user) #similarité user/users
+            cpt = 0
+            sum_r=0
+            sum_sim=0
+
+            for sim_user,sim_value in user_sims:
+                if sim_user in sim_users:
+                    sum_r += sim_users[sim_user]*sim_value
+                    sum_sim += sim_value
+                    cpt +=1
+
+                if cpt >= self.k:
+                    self.cpt_test += 1
+                    return sum_r/sum_sim+0.0
+            self.cpt_test +=1
+
+            if sum_sim == 0:
+                return None
+
+            return sum_r/(sum_sim+0.0)
+
+
+    def _cache_sim(self,user):
+        if user == self._usercache:
+            return self._cache
+        else:
+            self._usercache = user
+            self._cache = self.model.most_similar_cache(self.model["u_{}".format(user)])
+            return self._cache
+
+
     def pretty_print(self):
         pass

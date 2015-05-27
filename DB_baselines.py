@@ -8,7 +8,7 @@ import PoussCB.texts
 import PoussCB.unified_recsys
 from VectReco.Database import Database
 from random import shuffle
-
+import argparse
 
 def load_data(filename):
     print("Loading data")
@@ -48,8 +48,7 @@ def run_collaborative_filtering(training_reviews, validation_reviews, k, epochs,
     return colfil
 
 
-def run_all(filename, k, cf_epochs, cf_eta_0, cf_l2_weight, no_below, no_above, keep_n, te_epochs, uni_epochs,
-            uni_eta_0, uni_l2_weight, uni_balance):
+def run_all(filename, k, cf_epochs, cf_eta_0, cf_l2_weight):
     evaluation, training_reviews, validation_reviews = load_data(filename)
     overall_bias = run_overall_bias(training_reviews)
     print("RMSE overall bias: {} ".format(evaluation.evaluate(overall_bias)))
@@ -63,22 +62,17 @@ def run_all(filename, k, cf_epochs, cf_eta_0, cf_l2_weight, no_below, no_above, 
 
 
 if __name__ == u"__main__":
-    k = 5
+    parser = argparse.ArgumentParser()
+    parser.add_argument("db", type=str)
+    parser.add_argument("--latent",default=5, type=float)
+    parser.add_argument("--epochs",default=100, type=float)
+    parser.add_argument("--alpha",default=0.01, type=float)
+    parser.add_argument("--reg", default=0.01, type=float)
+    args = parser.parse_args()
+    k = args.latent
     # Collaborative filtering
-    cf_epochs = 100
-    cf_eta_0 = 0.01
-    cf_l2_weight = 0.01
-    # Dictionary
-    no_below = 10
-    no_above = 1.0
-    keep_n = 5000
-    # Topic extraction
-    te_epochs = 100
-    # Unified
-    uni_epochs = 100
-    uni_eta_0 = 0.001
-    uni_l2_weight = 0.01
-    uni_balance = 0.1
-    db = "/local/dias/db/ratebeer.db"
-    run_all(db, k, cf_epochs, cf_eta_0, cf_l2_weight, no_below, no_above, keep_n, te_epochs, uni_epochs,
-            uni_eta_0, uni_l2_weight, uni_balance)
+    cf_epochs = args.epoch
+    cf_eta_0 = args.alpha
+    cf_l2_weight = args.reg
+    db = args.db
+    run_all(db, k, cf_epochs, cf_eta_0, cf_l2_weight)

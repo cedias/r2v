@@ -94,6 +94,11 @@ class Database(object):
             raise AttributeError("Argument test is either True or False: here test is {}".format(test))
         return c.fetchall()
 
+    def getUserTestCount(self,user):
+        c = self.con.cursor()
+        c.execute("select count( *) as cpt from reviews where test and user = {} group by user ".format(user))
+        c.fetchone()[0]
+
     ## Item Methods
 
     def getAllItems(self):
@@ -131,7 +136,7 @@ class Database(object):
     def getAllReviews(self, test):
         c = self.con.cursor()
         if test is True:
-            c.execute("SELECT item,user,rating FROM reviews WHERE test")
+            c.execute("SELECT item,user,rating FROM reviews WHERE test order by user")
         elif test is False:
             c.execute("SELECT item,user,rating FROM reviews WHERE not test")
         elif test == None:
