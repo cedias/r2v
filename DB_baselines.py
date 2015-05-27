@@ -71,7 +71,7 @@ if __name__ == u"__main__":
     args = parser.parse_args()
     k = args.latent
     # Collaborative filtering
-    cf_epochs = args.epoch
+    cf_epochs = args.epochs
     cf_eta_0 = args.alpha
     cf_l2_weight = args.reg
     db = args.db
