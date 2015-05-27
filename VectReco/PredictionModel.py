@@ -87,8 +87,6 @@ class ItemBiasDB(PredictionModel):
     def predict(self, user, item):
         return self.db.getItemBias(item)
 
-    def pretty_print(self):
-        pass
 
 class UserBiasDB(PredictionModel):
     def fit(self,model,db):
@@ -97,8 +95,6 @@ class UserBiasDB(PredictionModel):
     def predict(self, user, item):
         return self.db.getUserBias(user)
 
-    def pretty_print(self):
-        pass
 
 class ItemBiasSpace(PredictionModel):
     def fit(self,model,db):
@@ -107,8 +103,6 @@ class ItemBiasSpace(PredictionModel):
     def predict(self, user, item):
         return self.model.most_similar_rating(self.model["i_"+str(item)])
 
-    def pretty_print(self):
-        pass
 
 class UserBiasSpace(PredictionModel):
     def fit(self,model,db):
@@ -117,8 +111,6 @@ class UserBiasSpace(PredictionModel):
     def predict(self, user, item):
         return self.model.most_similar_rating(self.model["u_"+str(user)])
 
-    def pretty_print(self):
-        pass
 
 class ClassicDB(PredictionModel):
     def fit(self,model,db):
@@ -128,8 +120,6 @@ class ClassicDB(PredictionModel):
     def predict(self, user, item):
         return (self.db_avg + self.db.getUserBias(user) + self.db.getItemBias(item))/3.0
 
-    def pretty_print(self):
-        pass
 
 class ClassicSpace(PredictionModel):
     def fit(self,model,db):
@@ -139,8 +129,6 @@ class ClassicSpace(PredictionModel):
     def predict(self, user, item):
         return (self.space_avg + self.model.most_similar_rating(self.model["u_"+str(user)]) + self.model.most_similar_rating(self.model["i_"+str(item)]) )/3.0
 
-    def pretty_print(self):
-        pass
 
 class ClassicMean(PredictionModel):
     def fit(self,model,db):
@@ -154,9 +142,6 @@ class ClassicMean(PredictionModel):
         a =  (self.db_avg + self.db.getUserBias(user) + self.db.getItemBias(item))/3.0
         b =  (self.space_avg + self.model.most_similar_rating(self.model["u_"+str(user)]) + self.model.most_similar_rating(self.model["i_"+str(item)]) )/3.0
         return  (a + b) /2.0
-
-    def pretty_print(self):
-        pass
 
 
 class CollabFiltering(PredictionModel):
@@ -217,7 +202,3 @@ class CollabFiltering(PredictionModel):
             self._usercache = user
             self._cache = self.model.most_similar_cache(self.model["u_{}".format(user)])
             return self._cache
-
-
-    def pretty_print(self):
-        pass
