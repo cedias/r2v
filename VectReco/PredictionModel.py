@@ -16,13 +16,13 @@ class PredictionModelIterator(object):
 
     def evaluate_all(self,output=None):
         for mod in self.predmod:
-            mod.pretty_print()
+            print(mod.pretty_print())
             if output is not None:
                 output.write(mod.pretty_print()+"\n")
             for metric in self.metrics:
                 m = metric(mod,self.db)
                 m.evaluate()
-                m.pretty_print()
+                print(m.pretty_print())
                 if output is not None:
                     output.write(m.pretty_print()+"\n")
 
@@ -141,7 +141,10 @@ class ClassicSpace(PredictionModel):
         self.model = model
 
     def predict(self, user, item):
-        return (self.space_avg + self.model.most_similar_rating(self.model["u_"+str(user)]) + self.model.most_similar_rating(self.model["i_"+str(item)]) )/3.0
+        if "u_"+str(user) not in self.model.vocab or "i_"+str(item) not in self.model.vocab:
+            return None
+        else:
+            return (self.space_avg + self.model.most_similar_rating(self.model["u_"+str(user)]) + self.model.most_similar_rating(self.model["i_"+str(item)]) )/3.0
 
 
 class ClassicMean(PredictionModel):
