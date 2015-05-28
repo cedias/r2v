@@ -118,7 +118,15 @@ class ClassicDB(PredictionModel):
         self.db_avg = db.getOverallBias()[0]
 
     def predict(self, user, item):
-        return (self.db_avg + self.db.getUserBias(user) + self.db.getItemBias(item))/3.0
+        ub = self.db.getUserBias(user)
+        ib = self.db.getItemBias(item)
+
+        if ub is None:
+            ub = 0
+        if ib is None:
+            ib = 0
+
+        return (self.db_avg + (ib-self.db_avg) + (ub-self.db_avg))
 
 
 class ClassicSpace(PredictionModel):
@@ -139,7 +147,15 @@ class ClassicMean(PredictionModel):
 
 
     def predict(self, user, item):
-        a =  (self.db_avg + self.db.getUserBias(user) + self.db.getItemBias(item))/3.0
+        ub = self.db.getUserBias(user)
+        ib = self.db.getItemBias(item)
+
+        if ub is None:
+            ub = self.db_avg
+        if ib is None:
+            ib = self.db_avg
+
+        a =  (self.db_avg + ub + ib)/3.0
         b =  (self.space_avg + self.model.most_similar_rating(self.model["u_"+str(user)]) + self.model.most_similar_rating(self.model["i_"+str(item)]) )/3.0
         return  (a + b) /2.0
 

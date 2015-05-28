@@ -77,7 +77,10 @@ class Database(object):
     def getUserBias(self, user):
         c = self.con.cursor()
         c.execute("SELECT avg(rating) as bias FROM reviews WHERE user = {} and not test group by user".format(user))
-        return c.fetchone()[0]
+        try:
+            return c.fetchone()[0]
+        except:
+            return None
 
     def getUsersBias(self):
         c = self.con.cursor()
@@ -94,11 +97,6 @@ class Database(object):
             raise AttributeError("Argument test is either True or False: here test is {}".format(test))
         return c.fetchall()
 
-    def getUserTestCount(self,user):
-        c = self.con.cursor()
-        c.execute("select count( *) as cpt from reviews where test and user = {} group by user ".format(user))
-        c.fetchone()[0]
-
     ## Item Methods
 
     def getAllItems(self):
@@ -109,8 +107,10 @@ class Database(object):
     def getItemBias(self, item):
         c = self.con.cursor()
         c.execute("SELECT avg(rating) as bias FROM reviews WHERE item = {} and not test group by item".format(item))
-        return c.fetchone()[0]
-
+        try:
+            return c.fetchone()[0]
+        except:
+            return None
     def getItemsBias(self):
         c = self.con.cursor()
         c.execute("SELECT item, avg(rating) as bias FROM reviews WHERE not test group by item")
