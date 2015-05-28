@@ -164,6 +164,9 @@ class ClassicMean(PredictionModel):
         if ib is None:
             ib = self.db_avg
 
+        if "u_"+str(user) not in self.model.vocab or  "i_"+str(item) not in self.model.vocab:
+            return None
+
         a =  (self.db_avg + ub + ib)/3.0
         b =  (self.space_avg + self.model.most_similar_rating(self.model["u_"+str(user)]) + self.model.most_similar_rating(self.model["i_"+str(item)]) )/3.0
         return  (a + b) /2.0
