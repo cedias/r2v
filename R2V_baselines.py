@@ -25,7 +25,7 @@ if __name__ == '__main__':
     parser.add_argument("db", type=str)
     parser.add_argument("model", type=str)
     parser.add_argument("--output",default=None, type=str)
-    parser.add_argument("--nb",default=100, type=str)
+    parser.add_argument("--nb",default=100, type=int)
     args = parser.parse_args()
     run(args)
 
