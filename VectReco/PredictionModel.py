@@ -101,7 +101,10 @@ class ItemBiasSpace(PredictionModel):
         self.model = model
 
     def predict(self, user, item):
-        return self.model.most_similar_rating(self.model["i_"+str(item)])
+        if "i_"+str(item) in self.model.vocab:
+            return self.model.most_similar_rating(self.model["i_"+str(item)])
+        else:
+            return None
 
 
 class UserBiasSpace(PredictionModel):
@@ -109,7 +112,10 @@ class UserBiasSpace(PredictionModel):
         self.model = model
 
     def predict(self, user, item):
-        return self.model.most_similar_rating(self.model["u_"+str(user)])
+        if "u_"+str(user) in self.model.vocab:
+            return self.model.most_similar_rating(self.model["u_"+str(user)])
+        else:
+            return None
 
 
 class ClassicDB(PredictionModel):
