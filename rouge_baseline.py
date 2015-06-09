@@ -125,9 +125,9 @@ def k_sim(db,neigh="user"):
 
         cpt_test += 1
         if cpt_test % 100 == 0:
-            print("R1:[{},{}], R2:[{},{}], R3:[{},{}]".format( random_r1/(cpt_test+0.0),oracle_r1/(cpt_test+0.0),random_r2/(cpt_test+0.0),oracle_r2/(cpt_test+0.0),random_r3/(cpt_test+0.0),oracle_r3/(cpt_test+0.0)))
+            print("at {} -- R1:[{},{}], R2:[{},{}], R3:[{},{}] (skipped {})".format(cpt_test, random_r1/(cpt_test+0.0),oracle_r1/(cpt_test+0.0),random_r2/(cpt_test+0.0),oracle_r2/(cpt_test+0.0),random_r3/(cpt_test+0.0),oracle_r3/(cpt_test+0.0),cpt_skipped))
 
-    print("R1:[{},{}], R2:[{},{}], R3:[{},{}]".format( random_r1/(cpt_test+0.0),oracle_r1/(cpt_test+0.0),random_r2/(cpt_test+0.0),oracle_r2/(cpt_test+0.0),random_r3/(cpt_test+0.0),oracle_r3/(cpt_test+0.0)))
+    print("at {} --  R1:[{},{}], R2:[{},{}], R3:[{},{}] (skipped {})".format(cpt_test, random_r1/(cpt_test+0.0),oracle_r1/(cpt_test+0.0),random_r2/(cpt_test+0.0),oracle_r2/(cpt_test+0.0),random_r3/(cpt_test+0.0),oracle_r3/(cpt_test+0.0),cpt_skipped))
 
 
 parser = argparse.ArgumentParser()
