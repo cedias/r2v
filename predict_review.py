@@ -67,84 +67,6 @@ def rouge_1_2_3_metric(words_real,words_pred):
     return (r1,r2,r3)
 
 
-def k_sim(model, db, k=None):
-
-    user_indexs = [i for i,word in enumerate(model.index2word) if word[0] == "u"]
-    print("a")
-    user_names = [word for i,word in enumerate(model.index2word) if word[0] == "u"]
-    print("b")
-
-    test_data = [(item, user, rating) for item, user, rating in getAllReviews(db, test=True)]
-    shuffle(test_data)
-    print("c")
-
-    sim_user_users = None
-    user_name = None
-
-    cpt_test = 0
-    cpt_skipped = 0
-    r1s,r2s,r3s = 0,0,0
-    oracle = 0
-    err = 0
-
-    for item, user, rating in test_data:
-
-        if cpt_test >= len(test_data)/2:
-            break
-
-        if "u_{}".format(user) not in model.vocab or "i_{}".format(item) not in model.vocab: #skip not in vocab
-            cpt_skipped += 1
-            continue
-
-        vect = model["u_{}".format(user)] - model["i_{}".format(item)]
-        vect = matutils.unitvec(vect)
-
-        sum_rs = 0
-        sum_sim = 0
-        list_sims = [(suser,srating,np.dot(matutils.unitvec(model["u_{}".format(suser)] - model["i_{}".format(item)]),vect)) for suser,srating,stext in getItemReviews(item, db) if "u_{}".format(suser) in model.vocab]
-
-        if len(list_sims) == 0:
-            cpt_skipped += 1
-            continue
-
-        sim_users,sim_rating,sim_sim = zip(*list_sims)
-        order = np.argsort(sim_sim)[::-1]
-
-        if len(order) == 0:
-            cpt_skipped +=1
-            continue
-
-        if k is not None:
-            order = order[:k]
-
-        sum_rs = sum([sim_rating[x]*sim_sim[x] for x in order])
-        sum_sim = sum([sim_sim[x] for x in order])
-        rtext = getReviewText(db,user,item)
-        ptext = getReviewText(db, sim_users[order[0]],item)
-
-        rtext = rtext.replace("."," ").lower().split(" ")
-        ptext = ptext.replace("."," ").lower().split(" ")
-
-        if len(ptext) < 3 or len(rtext) < 3:
-            cpt_skipped += 1
-            continue
-
-        r1,r2,r3 = rouge_1_2_3_metric(rtext,ptext)
-        r1s += r1
-        r2s += r2
-        r3s += r3
-
-
-        predicted = sum_rs/(sum_sim+0.0)
-        err += (rating - predicted) ** 2
-
-        cpt_test += 1
-        if cpt_test % 100 == 0:
-            print("MSE at {} tests is {}, rouge1 is {}, rouge2 is {}, rouge3 is {} - {} test cases where skipped".format(cpt_test,err/(cpt_test+0.0),r1s/(cpt_test+0.0),r2s/(cpt_test+0.0),r3s/(cpt_test+0.0),cpt_skipped))
-
-    print("Final MSE for {} tests is {}, rouge1 is {}, rouge2 is {}, rouge3 is {}  - {} test cases where skipped".format(cpt_test,err/(cpt_test+0.0),r1s/(cpt_test+0.0),r2s/(cpt_test+0.0),r3s/(cpt_test+0.0),cpt_skipped))
-
-
 def k_sim(model, db,neigh="user"):
 
     if neigh not in {"user","item"}:
@@ -187,16 +109,12 @@ def k_sim(model, db,neigh="user"):
         else:
             raise Exception("Neigh not item nor user")
 
-
-
-        sim_text, sim_sim = zip(*list_sims)
-        maxim_i = np.argmax(sim_sim)
-
-        if len(order) == 0:
+        if len(list_sims) == 0:
             cpt_skipped +=1
             continue
 
-
+        sim_text, sim_sim = zip(*list_sims)
+        maxim_i = np.argmax(sim_sim)
 
         rtext = getReviewText(db,user,item)
         ptext = sim_text[maxim_i]
