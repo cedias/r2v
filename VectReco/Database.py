@@ -28,7 +28,7 @@ class Database(object):
         c.executemany('INSERT INTO reviews VALUES (?,?,?,?,?,?)', data_generator)
         con.commit()
 
-        # db = Database(db_name)
+        db = Database(db_name)
         # c.executemany('INSERT INTO sentences VALUES (?,?,?,?,?)', db._generate_sentences())
         # con.commit()
 
