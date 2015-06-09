@@ -122,7 +122,7 @@ def k_sim(model, db,neigh="user"):
         rtext = rtext.replace("."," ").lower().split(" ")
         ptext = ptext.replace("."," ").lower().split(" ")
 
-        if len(rtext) == 0:
+        if len(rtext) < 3:
             cpt_skipped += 1
             continue
 

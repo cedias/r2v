@@ -92,10 +92,10 @@ def k_sim(db,neigh="user"):
             break
 
         if neigh == "user":
-            list_text = [stext.replace("."," ").lower().split(" ") for suser,_,stext in getItemReviews(item, db)]
+            list_text = [stext.replace("."," ").lower().split(" ") for _,_,stext in getItemReviews(item, db)]
 
         elif neigh == "item":
-            list_text = [stext.replace("."," ").lower().split(" ") for sitem,_,stext in getUserReviews(user, db)]
+            list_text = [stext.replace("."," ").lower().split(" ") for _,_,stext in getUserReviews(user, db)]
         else:
             raise Exception("Neigh not item nor user")
 
@@ -106,7 +106,7 @@ def k_sim(db,neigh="user"):
         rtext = getReviewText(db,user,item)
         rtext = rtext.replace("."," ").lower().split(" ")
 
-        if len(rtext) == 0: #division by zero, duh !
+        if len(rtext) < 3: #division by zero, duh !
             cpt_skipped +=1
             continue
 
