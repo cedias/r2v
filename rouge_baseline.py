@@ -67,7 +67,7 @@ def rouge_1_2_3_metric(words_real,words_pred):
     return (r1,r2,r3)
 
 
-def k_sim(model, db,neigh="user"):
+def k_sim(db,neigh="user"):
 
     if neigh not in {"user","item"}:
         print("only {} as similarity".format(["user","item"]))
@@ -94,16 +94,11 @@ def k_sim(model, db,neigh="user"):
         if cpt_test >= len(test_data)/2: # we only evaluate on random 50%
             break
 
-        if "u_{}".format(user) not in model.vocab or "i_{}".format(item) not in model.vocab: #skip not in vocab
-            cpt_skipped += 1
-            continue
-
-
         if neigh == "user":
-            list_text = [stext.replace("."," ").lower().split(" ") for suser,_,stext in getItemReviews(item, db) if "u_{}".format(suser) in model.vocab]
+            list_text = [stext.replace("."," ").lower().split(" ") for suser,_,stext in getItemReviews(item, db)]
 
         elif neigh == "item":
-            list_text = [stext.replace("."," ").lower().split(" ") for sitem,_,stext in getUserReviews(user, db) if "i_{}".format(sitem) in model.vocab]
+            list_text = [stext.replace("."," ").lower().split(" ") for sitem,_,stext in getUserReviews(user, db)]
         else:
             raise Exception("Neigh not item nor user")
 
@@ -138,10 +133,8 @@ def k_sim(model, db,neigh="user"):
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--neigh",default="item", type=str)
-parser.add_argument("model", type=str)
 parser.add_argument("db", type=str)
 
 args = parser.parse_args()
 db = args.db
-model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model,db,neigh=args.neigh)
+k_sim(db,neigh=args.neigh)
