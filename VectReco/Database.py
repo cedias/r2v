@@ -21,16 +21,16 @@ class Database(object):
         # Create table
         c.execute('''CREATE TABLE reviews
                  (item integer, user integer, review text, rating real, r_timestamp timestamp ,test boolean)''')
-        c.execute('''CREATE TABLE sentences
-                 (id_sent integer, item integer, user integer, sent text, rating real)''')
+        # c.execute('''CREATE TABLE sentences
+        #          (id_sent integer, item integer, user integer, sent text, rating real)''')
         # Save (commit) the changes
         con.commit()
         c.executemany('INSERT INTO reviews VALUES (?,?,?,?,?,?)', data_generator)
         con.commit()
 
-        db = Database(db_name)
-        c.executemany('INSERT INTO sentences VALUES (?,?,?,?,?)', db._generate_sentences())
-        con.commit()
+        # db = Database(db_name)
+        # c.executemany('INSERT INTO sentences VALUES (?,?,?,?,?)', db._generate_sentences())
+        # con.commit()
 
         db._create_indexs()
 
@@ -54,10 +54,10 @@ class Database(object):
         c.execute("CREATE index IF NOT EXISTS teid ON reviews(test)")
         c.execute("CREATE index IF NOT EXISTS tid ON reviews(r_timestamp)")
 
-        c.execute("CREATE index IF NOT EXISTS sind ON sentences(id_sent)")
-        c.execute("CREATE index IF NOT EXISTS uind ON sentences(user)")
-        c.execute("CREATE index IF NOT EXISTS iind ON sentences(item)")
-        c.execute("CREATE index IF NOT EXISTS rind ON sentences(rating)")
+        # c.execute("CREATE index IF NOT EXISTS sind ON sentences(id_sent)")
+        # c.execute("CREATE index IF NOT EXISTS uind ON sentences(user)")
+        # c.execute("CREATE index IF NOT EXISTS iind ON sentences(item)")
+        # c.execute("CREATE index IF NOT EXISTS rind ON sentences(rating)")
         self.con.commit()
 
     ## Overall Methods
