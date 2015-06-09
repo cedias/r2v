@@ -115,14 +115,6 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
         if k is not None:    
             order = order[:k]
 
-        # if mean_norm:
-        #     sim_rating = list(sim_rating)
-        #     for i in order:
-        #         if neigh == "user":
-        #             sim_rating[i] = sim_rating[i] - u_bias[sim_users[i]]
-        #         elif neigh == "item":
-        #             sim_rating[i] = sim_rating[i] - i_bias[sim_users[i]]
-
         
         sum_rs = sum([sim_rating[x]*sim_sim[x] for x in order])
         sum_sim = sum([sim_sim[x] for x in order])
