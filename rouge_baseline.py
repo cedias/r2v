@@ -1,8 +1,6 @@
 import sqlite3
 import argparse
-from gensim.models.doc2vec import Doc2Vec
 import numpy as np
-from gensim import matutils
 from random import shuffle,choice
 
 def getItemReviews(item, db):
@@ -77,7 +75,6 @@ def k_sim(db,neigh="user"):
     shuffle(test_data)
     print("test data ready")
 
-
     cpt_test = 0
     cpt_skipped = 0
 
@@ -106,9 +103,12 @@ def k_sim(db,neigh="user"):
             cpt_skipped +=1
             continue
 
-
         rtext = getReviewText(db,user,item)
         rtext = rtext.replace("."," ").lower().split(" ")
+
+        if len(rtext) == 0: #division by zero, duh !
+            cpt_skipped +=1
+            continue
 
         rouges = [rouge_1_2_3_metric(rtext,t) for t in list_text ]
 
@@ -128,7 +128,6 @@ def k_sim(db,neigh="user"):
             print("at {} -- R1:[{},{}], R2:[{},{}], R3:[{},{}] (skipped {})".format(cpt_test, random_r1/(cpt_test+0.0),oracle_r1/(cpt_test+0.0),random_r2/(cpt_test+0.0),oracle_r2/(cpt_test+0.0),random_r3/(cpt_test+0.0),oracle_r3/(cpt_test+0.0),cpt_skipped))
 
     print("at {} --  R1:[{},{}], R2:[{},{}], R3:[{},{}] (skipped {})".format(cpt_test, random_r1/(cpt_test+0.0),oracle_r1/(cpt_test+0.0),random_r2/(cpt_test+0.0),oracle_r2/(cpt_test+0.0),random_r3/(cpt_test+0.0),oracle_r3/(cpt_test+0.0),cpt_skipped))
-
 
 parser = argparse.ArgumentParser()
 
