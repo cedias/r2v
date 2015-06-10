@@ -1,6 +1,8 @@
 import re
 import random
 import hashlib
+import json
+import datetime
 
 class DatasetIterator(object):
 
@@ -104,7 +106,7 @@ class DatasetIterator(object):
                         dupeCount += 1
                     else:
                         dupeSet.add(hashedText)
-                        if (random.random() > 0.85):
+                        if (random.random() > 0.80):
                             test = True
                         else:
                             test = False
@@ -158,6 +160,53 @@ class RatebeerIterator(BeeradvocateIterator):
 
         return (text,float(rating))
 
+class YelpIterator(DatasetIterator):
+    def __init__(self,dataset):
+        DatasetIterator.__init__(self,dataset)
+
+    def iterate(self):
+        f = open(self.dataset)
+        user2id = {}
+        item2id = {}
+        i=0
+        dupeCount = 0
+        dupeSet = set()
+
+        for line in f:
+            dec = json.loads(line)
+
+            text = dec["text"]
+            rating = dec["stars"]
+            times = "15545423445"
+            if dec["business_id"] not in item2id:
+                item2id[dec["business_id"]] = len(item2id) + 1
+
+            if dec["user_id"] not in user2id:
+                user2id[dec["user_id"]] = len(user2id) + 1
+
+            item = item2id[dec["business_id"]]
+            user = user2id[dec["user_id"]]
+
+            hashedText = hashlib.md5(text.encode('utf-8')).hexdigest()
+
+            if hashedText in dupeSet:
+                dupeCount += 1
+            else:
+                dupeSet.add(hashedText)
+                if (random.random() > 0.80):
+                    test = True
+                else:
+                    test = False
+
+                text, rating = self.preprocess(text,rating)
+
+                yield((item, user, text, rating, times, test))
+
+            item = user = text = rating = times = None
+            i += 1
+            if i % 10000 == 0:
+                print("Imported {} reviews, found {} exact duplicates".format(i, dupeCount))
+            #item != user != text != rating != times
 
 
 

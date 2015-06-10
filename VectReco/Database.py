@@ -39,7 +39,9 @@ class Database(object):
     ## Private
     def _generate_sentences(self):
         i=0
-        for item,user,review,rating,_ in self.getFullReviews():
+        for item,user,review,rating,_,test in self.getFullReviews():
+            if test == True:
+                continue
             for sent in review.split("."):
                 if len(sent) > 2:
                     yield (i, item,user,sent.strip(),rating)

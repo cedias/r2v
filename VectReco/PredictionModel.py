@@ -214,10 +214,11 @@ class CollabFiltering(PredictionModel):
 
                 if cpt >= self.k:
                     self.cpt_test += 1
-                    return sum_r/sum_sim+0.0
+                    return sum_r/(sum_sim+0.0)
             self.cpt_test +=1
 
             if sum_sim == 0:
+                self.skipped += 1
                 return None
 
             return sum_r/(sum_sim+0.0)

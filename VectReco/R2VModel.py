@@ -11,9 +11,12 @@ class R2VModel(object):
         self.vocab = self.model.vocab
         self._cache = None
 
+    def set_cache(self,nump):
+        self._cache = nump
+
     @staticmethod
     def from_w2v_text(text,binary=True):
-        d2v = Doc2Vec.load_word2vec_format(text,binary=binary)
+        d2v = Doc2Vec.load_word2vec_format(text,binary=binary,norm_only=False)
         return R2VModel(d2v)
 
 
@@ -90,6 +93,12 @@ class R2VModel(object):
 
     def most_similar_item(self,vect):
         return int(self.most_similar(vect, limit="item", topn=1)[0][0].split("_")[1])
+
+    def most_similar_cache_gen(self,vect):
+            vect = matutils.unitvec(vect)
+            dist = np.dot(self._cache, vect)
+            best = np.argsort(dist)[::-1]
+            return [(sim, dist[sim]) for sim in best]
 
     def most_similar_cache(self,vect):
             vect = matutils.unitvec(vect)
