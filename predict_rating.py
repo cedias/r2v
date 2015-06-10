@@ -56,9 +56,6 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
     shuffle(test_data)
     print("test data ready")
 
-    sim_user_users = None
-    user_name = None
-
     cpt_test = 0
     cpt_skipped = 0
     err = 0
@@ -81,9 +78,6 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
 
         vect = matutils.unitvec(vect)
 
-        sum_rs = 0
-        sum_sim = 0
-
         if neigh == "user":
             if mean_norm:
                 list_sims = [(suser,srating-u_bias[suser],np.dot(matutils.unitvec(model["u_{}".format(suser)]),vect)) for suser,srating,_ in getItemReviews(item, db) if "u_{}".format(suser) in model.vocab]
@@ -101,9 +95,7 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
             cpt_skipped += 1
             continue
 
-
         sim_users,sim_rating,sim_sim = zip(*list_sims)
-
 
         sim_sim = [(x+1)/(2+0.0) for x in sim_sim] # make sim between [0,1]
         order = np.argsort(sim_sim)[::-1]
@@ -114,14 +106,6 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
         
         if k is not None:    
             order = order[:k]
-
-        # if mean_norm:
-        #     sim_rating = list(sim_rating)
-        #     for i in order:
-        #         if neigh == "user":
-        #             sim_rating[i] = sim_rating[i] - u_bias[sim_users[i]]
-        #         elif neigh == "item":
-        #             sim_rating[i] = sim_rating[i] - i_bias[sim_users[i]]
 
         
         sum_rs = sum([sim_rating[x]*sim_sim[x] for x in order])
