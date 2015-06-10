@@ -99,7 +99,7 @@ class DatasetIterator(object):
                     times = val
 
             if(self.reviewSep.search(line)):
-                if item != user != text != rating != times != None:
+                if item is not None and user is not None and text is not None and rating is not None and times is not None:
                     hashedText = hashlib.md5(text.encode('utf-8')).hexdigest()
 
                     if hashedText in dupeSet:

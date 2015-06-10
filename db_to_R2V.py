@@ -58,7 +58,7 @@ def main(args):
         if len(buff) >= args.buff_size:
             shuffle(buff)
             for se in buff:
-                f.write(se)
+                f.write(se.encode("utf-8"))
             buff = []
             print("wrote {} sentences".format(i))
 
