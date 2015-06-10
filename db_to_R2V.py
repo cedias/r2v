@@ -1,4 +1,4 @@
-#coding: utf-8
+#coding: utf8
 
 import sqlite3
 from random import shuffle
@@ -52,7 +52,7 @@ def main(args):
             continue
 
         for label in labels:
-            buff.append("{} {}\n".format(label, " ".join(sent)))
+            buff.append(str("{} {}\n".format(label, " ".join(sent))))
             i += 1
 
         if len(buff) >= args.buff_size:
