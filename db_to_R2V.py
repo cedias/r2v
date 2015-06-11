@@ -38,7 +38,7 @@ def iterReviews(db):
 
 
 def main(args):
-    f = open(args.output, "w")
+    f = open(args.output, "w",encoding="utf-8")
     buff = []
     i = 0
 
