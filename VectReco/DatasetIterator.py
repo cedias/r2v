@@ -2,11 +2,13 @@ import re
 import random
 import hashlib
 import json
+import gzip
 import datetime
+from random import shuffle
 
 class DatasetIterator(object):
 
-    def __init__(self,dataset):
+    def __init__(self,dataset,zipped=True,encoding="utf-8"):
         self.dataset = dataset
         self.itemPat = None
         self.userPat = None
@@ -14,6 +16,8 @@ class DatasetIterator(object):
         self.ratingPat = None
         self.timePat = None
         self.reviewSep = None
+        self.zipped = zipped
+        self.encoding = encoding
 
     def split_getLast(self,text):
         split = text.split(" ", 1)
@@ -50,9 +54,13 @@ class DatasetIterator(object):
         times = None
         i = 0
 
-        f = open(self.dataset, "r")
+        if self.zipped:
+            f = gzip.open(self.dataset, "r")
+        else:
+            f = open(self.dataset, "r",encoding=self.encoding)
 
         for line in f:
+            line = line.decode(self.encoding)
             if(self.itemPat.search(line)):
                 val = self.split_getLast(line)
 
@@ -117,10 +125,11 @@ class DatasetIterator(object):
                     i += 1
                     if i % 10000 == 0:
                         print("Imported {} reviews, found {} exact duplicates".format(i, dupeCount))
+        print("Imported {} reviews, found {} exact duplicates".format(i, dupeCount))
 
 class BeeradvocateIterator(DatasetIterator):
-    def __init__(self,dataset):
-        DatasetIterator.__init__(self,dataset)
+    def __init__(self,dataset,zipped=True,encoding="utf-8"):
+        DatasetIterator.__init__(self,dataset,zipped=True,encoding="utf-8")
         self.itemPat = re.compile('^beer/beerId:')
         self.userPat = re.compile('^review/profileName:')
         self.textPat = re.compile('^review/text:')
@@ -129,8 +138,8 @@ class BeeradvocateIterator(DatasetIterator):
         self.reviewSep = re.compile('^$')
 
 class AmazonIterator(DatasetIterator):
-    def __init__(self,dataset):
-        DatasetIterator.__init__(self,dataset)
+    def __init__(self,dataset,zipped=True,encoding="utf-8"):
+        DatasetIterator.__init__(self,dataset,zipped=True,encoding="utf-8")
         self.itemPat = re.compile('^product/productId:')
         self.userPat = re.compile('^review/userId:')
         self.textPat = re.compile('^review/text:')
@@ -139,8 +148,8 @@ class AmazonIterator(DatasetIterator):
         self.reviewSep = re.compile('^$')
 
 class RatebeerIterator(BeeradvocateIterator):
-    def __init__(self,dataset):
-        BeeradvocateIterator.__init__(self,dataset)
+    def __init__(self,dataset,zipped=True,encoding="utf-8"):
+        BeeradvocateIterator.__init__(self,dataset,zipped=True,encoding="utf-8")
 
     def preprocess(self,text,rating):
         regex_ponctuation = r"[\t,;#$^:*\[\]\+\|\{\}~%/\'=\"><\(\)_\-!&?]+"
@@ -161,8 +170,11 @@ class RatebeerIterator(BeeradvocateIterator):
         return (text,float(rating))
 
 class YelpIterator(DatasetIterator):
-    def __init__(self,dataset):
-        DatasetIterator.__init__(self,dataset)
+    def __init__(self,dataset,zipped=True,encoding="utf-8"):
+        if zipped:
+            print("PLEASE UNZIP")
+
+        DatasetIterator.__init__(self,dataset,zipped=True,encoding="utf-8")
 
     def iterate(self):
         f = open(self.dataset)
@@ -209,4 +221,34 @@ class YelpIterator(DatasetIterator):
             #item != user != text != rating != times
 
 
+
+class BufferedShuffledIterator(object):
+
+    def __init__(self,size,iterator):
+        self.len = size
+        self.iterator = iterator
+
+    def iterate(self):
+        buff = []
+        for a in self.iterator.iterate():
+            buff.append(list(a))
+
+            if len(buff) >= self.len:
+                shuffle(buff)
+                for b in buff:
+                    if random.random()>0.8:
+                        b[5] = 1
+                    else:
+                        b[5] = 0
+                    yield(tuple(b))
+                buff = []
+
+        shuffle(buff)
+        for b in buff:
+            if random.random()>0.8:
+                b[5] = 1
+            else:
+                b[5] = 0
+            yield(tuple(b))
+        buff = []
 

@@ -1,7 +1,8 @@
 import sqlite3
 import argparse
 import numpy as np
-from random import shuffle,choice
+import itertools
+from random import shuffle,choice, randint
 
 def getItemReviews(item, db):
     con = sqlite3.connect(db)
@@ -43,7 +44,6 @@ def getItemsBias(db):
     return c.fetchall()
 
 
-
 def find_ngrams(input_list, n):
   return {" ".join(p) for p in zip(*[input_list[i:] for i in range(n)])}
 
@@ -65,7 +65,7 @@ def rouge_1_2_3_metric(words_real,words_pred):
     return (r1,r2,r3)
 
 
-def k_sim(db,neigh="user"):
+def k_sim(db,neigh="user",n=0):
 
     if neigh not in {"user","item"}:
         print("only {} as similarity".format(["user","item"]))
@@ -92,10 +92,10 @@ def k_sim(db,neigh="user"):
             break
 
         if neigh == "user":
-            list_text = [stext.replace("."," ").lower().split(" ") for _,_,stext in getItemReviews(item, db)]
+            list_text = [stext for _,_,stext in getItemReviews(item, db)]
 
         elif neigh == "item":
-            list_text = [stext.replace("."," ").lower().split(" ") for _,_,stext in getUserReviews(user, db)]
+            list_text = [stext for _,_,stext in getUserReviews(user, db)]
         else:
             raise Exception("Neigh not item nor user")
 
@@ -110,18 +110,52 @@ def k_sim(db,neigh="user"):
             cpt_skipped +=1
             continue
 
-        rouges = [rouge_1_2_3_metric(rtext,t) for t in list_text ]
 
-        rand_choice = choice(rouges)
-        best_choice = np.max(rouges,axis=0)
+        if n <= 0:
 
-        oracle_r1 += best_choice[0]
-        oracle_r2 += best_choice[1]
-        oracle_r3 += best_choice[2]
+            list_text = [t.replace("."," ").lower().split(" ") for t in list_text]
+            rouges = [rouge_1_2_3_metric(rtext,t) for t in list_text ]
 
-        random_r1 += rand_choice[0]
-        random_r2 += rand_choice[1]
-        random_r3 += rand_choice[2]
+            rand_choice = choice(rouges)
+            best_choice = np.max(rouges,axis=0)
+
+            oracle_r1 += best_choice[0]
+            oracle_r2 += best_choice[1]
+            oracle_r3 += best_choice[2]
+
+            random_r1 += rand_choice[0]
+            random_r2 += rand_choice[1]
+            random_r3 += rand_choice[2]
+        else:
+
+            sents = list(itertools.chain.from_iterable([x.split(".") for x in list_text]))
+            sents_ch = [x for x in sents if len(x)>2]
+            sents_rd = [x for x in sents if len(x)>2]
+            shuffle(sents_rd)
+
+            rand_sents = [sents_rd[i] for i in range(0,n)]
+
+            rouges = [rouge_1_2_3_metric(rtext,t) for t in sents]
+
+            best_choices =  np.argsort(rouges,axis=0)[::-1]
+
+            best_choices_r1 =  itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices.T[0]])
+            best_choices_r2 =  itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices.T[0]])
+            best_choices_r3 =  itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices.T[0]])
+            words_real_n1 = find_ngrams(rtext,1)
+            words_pred_n1 = find_ngrams(best_choices_r1,1)
+            words_real_n2 = find_ngrams(rtext,2)
+            words_pred_n2 = find_ngrams(best_choices_r2,2)
+            words_real_n3 = find_ngrams(rtext,3)
+            words_pred_n3 = find_ngrams(best_choices_r3,3)
+
+            oracle_r1 += len(words_real_n1.intersection(words_pred_n1))/(len(words_real_n1)+0.0)
+            oracle_r2 = len(words_real_n2.intersection(words_pred_n2))/(len(words_real_n2)+0.0)
+            oracle_r3 = len(words_real_n3.intersection(words_pred_n3))/(len(words_real_n3)+0.0)
+
+
+
+
 
         cpt_test += 1
         if cpt_test % 100 == 0:
@@ -132,8 +166,9 @@ def k_sim(db,neigh="user"):
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--neigh",default="item", type=str)
+parser.add_argument("--n",default=0, type=int)
 parser.add_argument("db", type=str)
 
 args = parser.parse_args()
 db = args.db
-k_sim(db,neigh=args.neigh)
+k_sim(db,neigh=args.neigh,n=args.n)
