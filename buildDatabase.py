@@ -1,5 +1,5 @@
 from VectReco.Database import Database
-from VectReco.DatasetIterator import AmazonIterator,BeeradvocateIterator,RatebeerIterator, YelpIterator
+from VectReco.DatasetIterator import AmazonIterator,BeeradvocateIterator,RatebeerIterator, YelpIterator,BufferedShuffledIterator
 import argparse
 
 def run(args):
@@ -10,7 +10,7 @@ def run(args):
 
     print(args.zipped)
 
-    data_iterator = types[args.type](args.data,zipped=args.zipped,encoding=args.encoding)
+    data_iterator = BufferedShuffledIterator(5000,types[args.type](args.data,zipped=args.zipped,encoding=args.encoding))
     db = Database.build(args.output,data_iterator.iterate())
 
 
