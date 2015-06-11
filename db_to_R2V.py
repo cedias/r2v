@@ -52,13 +52,13 @@ def main(args):
             continue
 
         for label in labels:
-            buff.append(str("{} {}\n".format(label, " ".join(sent))))
+            buff.append("{} {}\n".format(label, " ".join(sent)))
             i += 1
 
         if len(buff) >= args.buff_size:
             shuffle(buff)
             for se in buff:
-                f.write(se.encode("utf-8"))
+                f.write(se)
             buff = []
             print("wrote {} sentences".format(i))
 
