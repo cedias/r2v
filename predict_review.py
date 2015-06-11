@@ -88,7 +88,7 @@ def k_sim(model, db,neigh="user"):
         if cpt_test >= len(test_data)/2: # we only evaluate on random 50%
             break
 
-        if "u_{}".format(user) not in model.vocab or "i_{}".format(item) not in model.vocab: #skip not in vocab
+        if ("u_{}".format(user) not in model.vocab and neigh=="user") or ("i_{}".format(item) not in model.vocab and neigh=="item"): #skip not in vocab
             cpt_skipped += 1
             continue
 
@@ -134,8 +134,7 @@ def k_sim(model, db,neigh="user"):
         cpt_test += 1
         if cpt_test % 100 == 0:
             print("Tests is {}, rouge1 is {}, rouge2 is {}, rouge3 is {} - {} test cases where skipped".format(cpt_test,r1s/(cpt_test+0.0),r2s/(cpt_test+0.0),r3s/(cpt_test+0.0),cpt_skipped))
-
-    print("Final for {} tests is {}, rouge1 is {}, rouge2 is {}, rouge3 is {}  - {} test cases where skipped".format(cpt_test,r1s/(cpt_test+0.0),r2s/(cpt_test+0.0),r3s/(cpt_test+0.0),cpt_skipped))
+    print("FINAL => Tests is {}, rouge1 is {}, rouge2 is {}, rouge3 is {} - {} test cases where skipped".format(cpt_test,r1s/(cpt_test+0.0),r2s/(cpt_test+0.0),r3s/(cpt_test+0.0),cpt_skipped))
 
 
 parser = argparse.ArgumentParser()
