@@ -30,7 +30,7 @@ class RmseEvaluation:
         if reviews is not None:
             deltas = [recommender_system.predict(r.get_user(), r.get_item()) - r.get_rating() for r in reviews]
             squared_deltas = [x*x for x in deltas]
-            mse = np.mean(squared_deltas)
+            rmse = np.mean(squared_deltas)
 
         return rmse
 
