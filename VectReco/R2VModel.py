@@ -94,11 +94,14 @@ class R2VModel(object):
     def most_similar_item(self,vect):
         return int(self.most_similar(vect, limit="item", topn=1)[0][0].split("_")[1])
 
-    def most_similar_cache_gen(self,vect):
+    def most_similar_cache_gen(self,vect,k=None):
             vect = matutils.unitvec(vect)
             dist = np.dot(self._cache, vect)
             best = np.argsort(dist)[::-1]
-            return [(sim, dist[sim]) for sim in best]
+            if k is None:
+                return [(sim, dist[sim]) for sim in best]
+            else:
+                return [(sim, dist[sim]) for sim in best[:k]]
 
     def most_similar_cache(self,vect):
             vect = matutils.unitvec(vect)

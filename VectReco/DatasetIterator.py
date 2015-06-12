@@ -221,6 +221,68 @@ class YelpIterator(DatasetIterator):
             #item != user != text != rating != times
 
 
+class AmazonJsonIterator(DatasetIterator):
+    """
+    {
+  "reviewerID": "A2SUAM1J3GNN3B",
+  "asin": "0000013714",
+  "reviewerName": "J. McDonald",
+  "helpful": [2, 3],
+  "reviewText": "I bought this for my husband who plays the piano.  He is having a wonderful time playing these old hymns.  The music  is at times hard to read because we think the book was published for singing from more than playing from.  Great purchase though!",
+  "overall": 5.0,
+  "summary": "Heavenly Highway Hymns",
+  "unixReviewTime": 1252800000,
+  "reviewTime": "09 13, 2009"
+}
+
+    """
+    def __init__(self,dataset,zipped=True,encoding="utf-8"):
+        DatasetIterator.__init__(self,dataset,zipped=True,encoding="utf-8")
+
+    def iterate(self):
+        f = gzip.open(self.dataset)
+        user2id = {}
+        item2id = {}
+        i=0
+        dupeCount = 0
+        dupeSet = set()
+
+        for line in f:
+            dec = eval(line)
+
+            text = dec["reviewText"]
+            rating = dec["overall"]
+            times = "15545423445"
+            if dec["asin"] not in item2id:
+                item2id[dec["asin"]] = len(item2id) + 1
+
+            if dec["reviewerID"] not in user2id:
+                user2id[dec["reviewerID"]] = len(user2id) + 1
+
+            item = item2id[dec["asin"]]
+            user = user2id[dec["reviewerID"]]
+
+            hashedText = hashlib.md5(text.encode('utf-8')).hexdigest()
+
+            if hashedText in dupeSet:
+                dupeCount += 1
+            else:
+                dupeSet.add(hashedText)
+                if (random.random() > 0.80):
+                    test = True
+                else:
+                    test = False
+
+                text, rating = self.preprocess(text,rating)
+
+                yield((item, user, text, rating, times, test))
+
+
+            i += 1
+            if i % 10000 == 0:
+                print("Imported {} reviews, found {} exact duplicates".format(i, dupeCount))
+
+
 
 class BufferedShuffledIterator(object):
 

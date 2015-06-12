@@ -1,9 +1,9 @@
 from VectReco.Database import Database
-from VectReco.DatasetIterator import AmazonIterator,BeeradvocateIterator,RatebeerIterator, YelpIterator,BufferedShuffledIterator
+from VectReco.DatasetIterator import AmazonIterator,BeeradvocateIterator,RatebeerIterator, YelpIterator,BufferedShuffledIterator, AmazonJsonIterator
 import argparse
 
 def run(args):
-    types = {"amazon":AmazonIterator,"ratebeer":RatebeerIterator,"beeradvocate":BeeradvocateIterator,"yelp":YelpIterator}
+    types = {"amazon":AmazonIterator,"amazonjson":AmazonJsonIterator,"ratebeer":RatebeerIterator,"beeradvocate":BeeradvocateIterator,"yelp":YelpIterator}
 
     if args.type not in types:
         print("data type not supported, supported types are {} ".format(types.keys()))

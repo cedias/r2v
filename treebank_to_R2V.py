@@ -148,7 +148,8 @@ def main(args):
     l, train, dev, test, lab = load(args.datafolder)
     sentences = []
     classes = args.classes
-
+    fs = args.full_sentences
+    known = 0
     for tree in train:
         sent = " ".join(tree.sentence)
         label = Tree.getSoftLabel(lab[sent])
@@ -162,6 +163,10 @@ def main(args):
                 label = 1
 
         sentences.append("sent_{} {}\n".format(label, sent))
+
+        if fs:
+            sentences.append("kn_{}_{} {}\n".format(label,known, sent))
+            known += 1
 
 
     for tree in dev:
@@ -178,6 +183,9 @@ def main(args):
 
         sentences.append("sent_{} {}\n".format(label, sent))
 
+        if fs:
+            sentences.append("kn_{}_{} {}\n".format(label,known, sent))
+            known += 1
 
     for i,tree in enumerate(test):
         sent = " ".join(tree.sentence)
@@ -204,6 +212,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("datafolder",default="Data", type=str)
 parser.add_argument("--output",default="treebank.d2v", type=str)
 parser.add_argument("--classes",default=5,type=int)
+parser.add_argument("--full_sentences",default=False,type=bool)
 args = parser.parse_args()
 
 
