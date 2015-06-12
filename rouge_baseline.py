@@ -147,10 +147,15 @@ def k_sim(db,neigh="user",n=0):
                 continue
 
             best_choices =  np.argsort(rouges,axis=0)[::-1]
-
+            print(best_choices.shape)
+            print(best_choices.T[1])
+            print(rouges)
+            print(len(sents_ch))
+            ##TODO BUUUUUG
             best_choices_r1 =  itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices.T[0][:n]])
             best_choices_r2 =  itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices.T[1][:n]])
             best_choices_r3 =  itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices.T[2][:n]])
+
             words_real_n1 = find_ngrams(rtext,1)
             words_pred_n1 = find_ngrams(best_choices_r1,1)
             words_real_n2 = find_ngrams(rtext,2)

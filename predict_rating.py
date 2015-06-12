@@ -133,7 +133,7 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--k",default=100, type=int)
+parser.add_argument("--k",default=5, type=int)
 parser.add_argument("--neigh",default="item", type=str)
 parser.add_argument('--mean_center', dest='mean_center', action='store_true')
 parser.add_argument("model", type=str)
