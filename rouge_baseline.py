@@ -133,28 +133,25 @@ def k_sim(db,neigh="user",n=0):
             sents_rd = [x for x in sents if len(x)>2]
             shuffle(sents_rd)
 
-            if(len(sents) < n):
+            if(len(sents_ch) < n):
                 cpt_skipped += 1
                 continue
 
-            rand_sents = [sents_rd[i] for i in range(0,n)]
+            rand_sents = [sents_rd[i] for i in range(0,n)] #Phrases au hasard
 
 
-            rouges = [rouge_1_2_3_metric(rtext,t) for t in sents]
+            rouges = [rouge_1_2_3_metric(rtext,t) for t in sents_ch] #metric rouge pour toutes les phrases
 
-            if len(rouges) < 1:
+            if len(rouges) < n: #pas assez de phrases
                 cpt_skipped += 1
                 continue
 
-            best_choices =  np.argsort(rouges,axis=0)[::-1]
-            print(best_choices.shape)
-            print(best_choices.T[1])
-            print(rouges)
-            print(len(sents_ch))
-            ##TODO BUUUUUG
-            best_choices_r1 =  itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices.T[0][:n]])
-            best_choices_r2 =  itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices.T[1][:n]])
-            best_choices_r3 =  itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices.T[2][:n]])
+            best_choices =  np.argsort(rouges,axis=0)[::-1].T
+
+
+            best_choices_r1 =  list(itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices[0][:n]]))
+            best_choices_r2 =  list(itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices[1][:n]]))
+            best_choices_r3 =  list(itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices[2][:n]]))
 
             words_real_n1 = find_ngrams(rtext,1)
             words_pred_n1 = find_ngrams(best_choices_r1,1)
