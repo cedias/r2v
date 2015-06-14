@@ -158,7 +158,7 @@ def k_sim(model, db,neigh="item",n=None):
         if len(ptext) < 3 or len(rtext) < 3:
             cpt_skipped += 1
             continue
-        cpt_sent += avg_sent
+        cpt_sent += round(avg_sent[user])
 
         r1,r2,r3 = rouge_1_2_3_metric(rtext,ptext)
         r1s += r1
