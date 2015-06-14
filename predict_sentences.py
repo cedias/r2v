@@ -35,6 +35,15 @@ def getUserReviews(user, db):
     c.execute("SELECT item,rating,review FROM reviews WHERE user = {} and not test".format(user))
     return c.fetchall()
 
+def testUsersAvg(db):
+
+    con = sqlite3.connect(db)
+    c = con.cursor()
+    all = [(user,[len(x.split(".")) for x in reviews.split(",")]) for user,reviews in c.execute("SELECT user, group_concat(review,\",\") as reviews FROM reviews WHERE not test group by user")]
+    avg = {user:np.mean(lists) for user,lists in all}
+    return avg
+
+
 def find_ngrams(input_list, n):
   return {" ".join(p) for p in zip(*[input_list[i:] for i in range(n)])}
 
@@ -86,6 +95,12 @@ def k_sim(model, db,neigh="item",n=None):
     if neigh not in {"user","item"}:
         print("only {} as similarity".format(["user","item"]))
 
+
+    if n>1:
+        avg_sent = testUsersAvg(db)
+    else:
+        avg_sent = None
+
     print("prepping data")
     test_data = [(item, user, rating) for item, user, rating in getAllReviews(db, test=True)]
     shuffle(test_data)
@@ -121,12 +136,12 @@ def k_sim(model, db,neigh="item",n=None):
             raise Exception("Neigh not item nor user")
 
 
-        if len(list_text) < n:
-            cpt_skipped +=1
-            continue
-
         rtext = getReviewText(db,user,item)
-        ptext = predict_text(model,vect,list_text,n)
+
+        if n<=1:
+            ptext = predict_text(model,vect,list_text,n)
+        else:
+            ptext = predict_text(model,vect,list_text,avg_sent[user])
 
         rtext = rtext.replace("."," ").lower().split(" ")
         ptext = ptext.replace("."," ").lower().split(" ")

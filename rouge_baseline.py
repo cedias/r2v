@@ -65,7 +65,22 @@ def rouge_1_2_3_metric(words_real,words_pred):
     return (r1,r2,r3)
 
 
+def testUsersAvg(db):
+
+    con = sqlite3.connect(db)
+    c = con.cursor()
+    all = [(user,[len(x.split(".")) for x in reviews.split(",")]) for user,reviews in c.execute("SELECT user, group_concat(review,\",\") as reviews FROM reviews WHERE not test group by user")]
+    avg = {user:np.mean(lists) for user,lists in all}
+    return avg
+
+
+
 def k_sim(db,neigh="user",n=0):
+
+    if n>1:
+        avg_sent = testUsersAvg(db)
+    else:
+        avg_sent = None
 
     if neigh not in {"user","item"}:
         print("only {} as similarity".format(["user","item"]))
@@ -85,6 +100,7 @@ def k_sim(db,neigh="user",n=0):
     random_r1 = 0
     random_r2 = 0
     random_r3 = 0
+
 
     for item, user, _ in test_data:
 
@@ -128,28 +144,23 @@ def k_sim(db,neigh="user",n=0):
             random_r3 += rand_choice[2]
         else:
 
+            if n>1:
+                n_sent = avg_sent[user]
+            else:
+                n_sent = 1
+
             sents = list(itertools.chain.from_iterable([x.split(".") for x in list_text]))
             sents_ch = [x for x in sents if len(x)>2]
             sents_rouges = [x.replace("."," ").lower().split(" ") for x in sents_ch]
 
-            if(len(sents_ch) < n):
-                cpt_skipped += 1
-                continue
-
-
-
             rouges = [rouge_1_2_3_metric(rtext,t) for t in sents_rouges] #metric rouge pour toutes les phrases
-
-            if len(rouges) < n: #pas assez de phrases
-                cpt_skipped += 1
-                continue
 
             best_choices =  np.argsort(rouges,axis=0)[::-1].T
 
 
-            best_choices_r1 =  list(itertools.chain.from_iterable([ sents_rouges[i] for i in best_choices[0][:n]]))
-            best_choices_r2 =  list(itertools.chain.from_iterable([ sents_rouges[i] for i in best_choices[1][:n]]))
-            best_choices_r3 =  list(itertools.chain.from_iterable([ sents_rouges[i] for i in best_choices[2][:n]]))
+            best_choices_r1 =  list(itertools.chain.from_iterable([ sents_rouges[i] for i in best_choices[0][:n_sent]]))
+            best_choices_r2 =  list(itertools.chain.from_iterable([ sents_rouges[i] for i in best_choices[1][:n_sent]]))
+            best_choices_r3 =  list(itertools.chain.from_iterable([ sents_rouges[i] for i in best_choices[2][:n_sent]]))
 
             words_real_n1 = find_ngrams(rtext,1)
             words_pred_n1 = find_ngrams(best_choices_r1,1)
@@ -163,6 +174,10 @@ def k_sim(db,neigh="user",n=0):
             oracle_r3 += len(words_real_n3.intersection(words_pred_n3))/(len(words_real_n3)+0.0)
 
             for i in range(0,n):
+
+                if len(rouges) == 0:
+                    break
+
                 rand_i = randint(0,len(rouges)-1)
                 rand_choice = rouges[rand_i]
 
