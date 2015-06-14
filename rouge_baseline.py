@@ -130,17 +130,15 @@ def k_sim(db,neigh="user",n=0):
 
             sents = list(itertools.chain.from_iterable([x.split(".") for x in list_text]))
             sents_ch = [x for x in sents if len(x)>2]
-            sents_rd = [x for x in sents if len(x)>2]
-            shuffle(sents_rd)
+            sents_rouges = [x.replace("."," ").lower().split(" ") for x in sents_ch]
 
             if(len(sents_ch) < n):
                 cpt_skipped += 1
                 continue
 
-            rand_sents = [sents_rd[i] for i in range(0,n)] #Phrases au hasard
 
 
-            rouges = [rouge_1_2_3_metric(rtext,t) for t in sents_ch] #metric rouge pour toutes les phrases
+            rouges = [rouge_1_2_3_metric(rtext,t) for t in sents_rouges] #metric rouge pour toutes les phrases
 
             if len(rouges) < n: #pas assez de phrases
                 cpt_skipped += 1
@@ -149,9 +147,9 @@ def k_sim(db,neigh="user",n=0):
             best_choices =  np.argsort(rouges,axis=0)[::-1].T
 
 
-            best_choices_r1 =  list(itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices[0][:n]]))
-            best_choices_r2 =  list(itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices[1][:n]]))
-            best_choices_r3 =  list(itertools.chain.from_iterable([ sents_ch[i].replace("."," ").lower().split(" ") for i in best_choices[2][:n]]))
+            best_choices_r1 =  list(itertools.chain.from_iterable([ sents_rouges[i] for i in best_choices[0][:n]]))
+            best_choices_r2 =  list(itertools.chain.from_iterable([ sents_rouges[i] for i in best_choices[1][:n]]))
+            best_choices_r3 =  list(itertools.chain.from_iterable([ sents_rouges[i] for i in best_choices[2][:n]]))
 
             words_real_n1 = find_ngrams(rtext,1)
             words_pred_n1 = find_ngrams(best_choices_r1,1)
@@ -161,8 +159,18 @@ def k_sim(db,neigh="user",n=0):
             words_pred_n3 = find_ngrams(best_choices_r3,3)
 
             oracle_r1 += len(words_real_n1.intersection(words_pred_n1))/(len(words_real_n1)+0.0)
-            oracle_r2 = len(words_real_n2.intersection(words_pred_n2))/(len(words_real_n2)+0.0)
-            oracle_r3 = len(words_real_n3.intersection(words_pred_n3))/(len(words_real_n3)+0.0)
+            oracle_r2 += len(words_real_n2.intersection(words_pred_n2))/(len(words_real_n2)+0.0)
+            oracle_r3 += len(words_real_n3.intersection(words_pred_n3))/(len(words_real_n3)+0.0)
+
+            for i in range(0,n):
+                rand_i = randint(0,len(rouges)-1)
+                rand_choice = rouges[rand_i]
+
+                random_r1 += rand_choice[0]
+                random_r2 += rand_choice[1]
+                random_r3 += rand_choice[2]
+
+                del(rouges[rand_i])
 
 
 
