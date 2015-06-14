@@ -74,6 +74,9 @@ def predict_text(model,vect,texts,num_sent):
     sents = list(itertools.chain.from_iterable([x.split(".") for x in texts]))
     sents = [x for x in sents if len(x)>2]
 
+    if len(sents) < 1:
+        return None
+
     sentences = np.zeros((len(sents),model.layer1_size))
 
     for i,sent in enumerate(sents):
@@ -138,10 +141,15 @@ def k_sim(model, db,neigh="item",n=None):
 
         rtext = getReviewText(db,user,item)
 
+
         if n<=1:
             ptext = predict_text(model,vect,list_text,n)
         else:
             ptext = predict_text(model,vect,list_text,avg_sent[user])
+
+        if ptext is None:
+            cpt_skipped +=1
+            continue
 
         rtext = rtext.replace("."," ").lower().split(" ")
         ptext = ptext.replace("."," ").lower().split(" ")
