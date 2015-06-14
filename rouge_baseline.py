@@ -145,7 +145,11 @@ def k_sim(db,neigh="user",n=0):
         else:
 
             if n>1:
-                n_sent = round(avg_sent[user])
+                if user in avg_sent:
+                    n_sent = round(avg_sent[user])
+                else:
+                    cpt_skipped+=1
+                    continue
             else:
                 n_sent = 1
 

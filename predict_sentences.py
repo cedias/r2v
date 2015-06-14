@@ -117,7 +117,7 @@ def k_sim(model, db,neigh="item",n=None):
     for item, user, rating in test_data:
 
         if cpt_test >= len(test_data)/2: # we only evaluate on random 50%
-                    break
+            break
 
         if ("u_{}".format(user) not in model.vocab and neigh=="user") or ("i_{}".format(item) not in model.vocab and neigh=="item"): #skip not in vocab
             cpt_skipped += 1
@@ -144,9 +144,14 @@ def k_sim(model, db,neigh="item",n=None):
 
 
         if n<=1:
-            ptext = predict_text(model,vect,list_text,n)
+            ptext = predict_text(model,vect,list_text,1)
+            cpt_sent += 1
         else:
-            ptext = predict_text(model,vect,list_text,round(avg_sent[user]))
+            if user in avg_sent:
+                cpt_sent += round(avg_sent[user])
+                ptext = predict_text(model,vect,list_text,round(avg_sent[user]))
+            else:
+                ptext = None
 
         if ptext is None:
             cpt_skipped +=1
@@ -158,7 +163,8 @@ def k_sim(model, db,neigh="item",n=None):
         if len(ptext) < 3 or len(rtext) < 3:
             cpt_skipped += 1
             continue
-        cpt_sent += round(avg_sent[user])
+
+
 
         r1,r2,r3 = rouge_1_2_3_metric(rtext,ptext)
         r1s += r1
