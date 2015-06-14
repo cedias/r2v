@@ -102,7 +102,7 @@ def k_sim(model, db,neigh="item",n=None):
     if n>1:
         avg_sent = testUsersAvg(db)
     else:
-        avg_sent = None
+        avg_sent = 1
 
     print("prepping data")
     test_data = [(item, user, rating) for item, user, rating in getAllReviews(db, test=True)]
@@ -112,6 +112,7 @@ def k_sim(model, db,neigh="item",n=None):
     cpt_test = 0
     cpt_skipped = 0
     r1s,r2s,r3s = 0,0,0
+    cpt_sent = 0
 
     for item, user, rating in test_data:
 
@@ -145,7 +146,7 @@ def k_sim(model, db,neigh="item",n=None):
         if n<=1:
             ptext = predict_text(model,vect,list_text,n)
         else:
-            ptext = predict_text(model,vect,list_text,avg_sent[user])
+            ptext = predict_text(model,vect,list_text,round(avg_sent[user]))
 
         if ptext is None:
             cpt_skipped +=1
@@ -157,6 +158,7 @@ def k_sim(model, db,neigh="item",n=None):
         if len(ptext) < 3 or len(rtext) < 3:
             cpt_skipped += 1
             continue
+        cpt_sent += avg_sent
 
         r1,r2,r3 = rouge_1_2_3_metric(rtext,ptext)
         r1s += r1
@@ -165,8 +167,8 @@ def k_sim(model, db,neigh="item",n=None):
 
         cpt_test += 1
         if cpt_test % 100 == 0:
-            print("Tests is {}, rouge1 is {}, rouge2 is {}, rouge3 is {} - {} test cases where skipped".format(cpt_test,r1s/(cpt_test+0.0),r2s/(cpt_test+0.0),r3s/(cpt_test+0.0),cpt_skipped))
-    print("FINAL: Tests is {}, rouge1 is {}, rouge2 is {}, rouge3 is {} - {} test cases where skipped".format(cpt_test,r1s/(cpt_test+0.0),r2s/(cpt_test+0.0),r3s/(cpt_test+0.0),cpt_skipped))
+            print("Tests is {}, rouge1 is {}, rouge2 is {}, rouge3 is {} - avg length : {} - {} test cases where skipped".format(cpt_test,r1s/(cpt_test+0.0),r2s/(cpt_test+0.0),r3s/(cpt_test+0.0),cpt_sent/(cpt_test+0.0),cpt_skipped))
+    print("FINAL: Tests is {}, rouge1 is {}, rouge2 is {}, rouge3 is {} - avg length : {} - {} test cases where skipped".format(cpt_test,r1s/(cpt_test+0.0),r2s/(cpt_test+0.0),r3s/(cpt_test+0.0),cpt_sent/(cpt_test+0.0),cpt_skipped))
 
 parser = argparse.ArgumentParser()
 
