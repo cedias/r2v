@@ -35,13 +35,12 @@ def getUserReviews(user, db):
     c.execute("SELECT item,rating,review FROM reviews WHERE user = {} and not test".format(user))
     return c.fetchall()
 
-def testUsersAvg(db):
-
+def getSentAVG(user,db):
     con = sqlite3.connect(db)
     c = con.cursor()
-    all = [(user,[len(x.split(".")) for x in reviews.split(",")]) for user,reviews in c.execute("SELECT user, group_concat(review,\",\") as reviews FROM reviews WHERE not test group by user")]
-    avg = {user:np.mean(lists) for user,lists in all}
-    return avg
+    c.execute("select avg(cpt) from (select user,item, count(*) as cpt from sentences where user = {} group by user,item)".format(user))
+    return c.fetchone()[0]
+
 
 
 def find_ngrams(input_list, n):
@@ -99,11 +98,6 @@ def k_sim(model, db,neigh="item",n=None):
         print("only {} as similarity".format(["user","item"]))
 
 
-    if n>1:
-        avg_sent = testUsersAvg(db)
-    else:
-        avg_sent = 1
-
     print("prepping data")
     test_data = [(item, user, rating) for item, user, rating in getAllReviews(db, test=True)]
     shuffle(test_data)
@@ -147,9 +141,9 @@ def k_sim(model, db,neigh="item",n=None):
             ptext = predict_text(model,vect,list_text,1)
             cpt_sent += 1
         else:
-            if user in avg_sent:
-                cpt_sent += round(avg_sent[user])
-                ptext = predict_text(model,vect,list_text,round(avg_sent[user]))
+            avg_sent = getSentAVG(user,db)
+            if avg_sent is not Nonet:
+                ptext = predict_text(model,vect,list_text,round(avg_sent))
             else:
                 ptext = None
 
