@@ -207,4 +207,4 @@ else:
 
     print("Original rating: {} , Original review: {} ".format(ora,ore))
     print("Predicted rating is {}, predicted review is {}".format(pra,pre))
-    print("Predicted rating is {}, predicted full_review is {}".format(pra,pre))
+    print("Predicted rating is {}, predicted full_review is {}".format(pra,full_rev))
