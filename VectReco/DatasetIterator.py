@@ -60,7 +60,7 @@ class DatasetIterator(object):
             f = open(self.dataset, "r",encoding=self.encoding)
 
         for line in f:
-            line = line.decode(self.encoding)
+            line = line.decode(self.encoding,errors="ignore")
             if(self.itemPat.search(line)):
                 val = self.split_getLast(line)
 

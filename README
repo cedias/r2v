@@ -1,6 +1,12 @@
+===========================================================
 UNIFIED VECTOR SPACE MODEL FOR ENRICHED RECOMMENDATION CODE
 ===========================================================
-Tested with Python 3.4
+
+-----------------------
+REQUIREMENTS & INSTALL
+-----------------------
+
+Tested with Python 3.4 on last debian and last linux mint
 
 Requirements:
     - gcc
@@ -9,21 +15,191 @@ Requirements:
     - Gensim
     - SQLITE3
     - Scikit-Learn
+    - Wordcloud (https://github.com/amueller/word_cloud)
 
 To install:
 
 1) Install dependencies
 
     pip install -r requirements.txt
+    or
+    pip3 install -r requirements.txt
 
 2) Compile C word2vec:
 
     cd d2v
     make
 
-To try recommender system:
-(threads default 8)
-python3.4 --Threads <INT> demo.py
+
+-----------------------
+QUICK TEST SCRIPTS
+-----------------------
+
+
+Recommender System:
+-----------------------
+
+/!\ NOTE: TRAINS ONLY FOR ONE ITERATION FOR SPEED PURPOSE. (but results are already quite near paper ones) /!\
+
+python3.4 [--threads <int> (default = 5)] demo_reco.py
+
+Command sequence:
+
+    1 - download dataset (~400 Mo)
+    wget "http://95.85.49.48/ratebeer.txt.gz"
+
+    2 - Build database
+    python3.4 buildDatabase.py --encoding ascii --gz ratebeer.txt.gz ratebeer ratebeer.db
+
+    3 - Format for d2v
+    python3.4 db_to_R2V.py --min_count 10000 ratebeer.db ratebeer-10k.txt
+
+    4 - Learn Model
+    ./d2v/d2v -train ratebeer-10k.txt -sentence-vectors 1 -size 200 -window 10 -cbow 0 -min-count 0 -sample 10e-4 -negative 5 -threads 5 -binary 1 -iter 1 -alpha 0.08 -output rb.d2v
+
+    5 - Predict ratings
+    python3.4 predict_rating.py --k 25 --neigh user rb.d2v ratebeer.db
+
+    6 - Predict reviews (not in demo script)
+    python3.4 predict_review.py --neigh user rb.d2v ratebeer.db
+
+
+Sentiment Treebank:
+--------------------
+
+python3.4 [--threads <int> (default = 5)] demo_treebank.py
+
+Command sequence:
+
+    1 - Format for d2v
+    python3.4 treebank_to_R2V.py --output treebank.d2v Data/stanfordSentimentTreebank
+
+    2 - Learn Model
+    ./d2v/d2v -train treebank.d2v -output ../treebank_d2v.bin -binary 1 -hs 0 -window 10 -sample 0 -min-count 0 -negative 15 -sentence-vectors 1 -cbow 0 -iter 10 -threads 5
+
+    3 - Predict accuracy
+    python3.4 treebank_results.py treebank_d2v.bin
+
+
+-------------------
+SCRIPT LIST
+-------------------
+
+buildDatabase.py
+usage: buildDatabase.py [--encoding ENCODING] [--gz] data type output
+
+=> Script to build a sqlite3 database from type: ratebeer/beeradvocate/amazon/amazonjson/yelp datasets
+    --> --gz if zipped
+    --> encoding can be specified
+------------------
+
+db_to_R2V.py
+usage: db_to_R2V.py [--min_count MIN_COUNT] [--min_sent_size MIN_SENT_SIZE] [--buff_size BUFF_SIZE] db output
+
+=> Converts a sqlite3 database (db) to a file (output) with proper d2v format - Label Text
+    --> remove words appearing less than min_count
+    --> remove sentences with less than min_sent_size
+    --> shuffle per buffer size
+-----------------
+
+predict_one.py
+usage: predict_one.py [--n N] [--neigh NEIGH] [--mean_center] model db user item
+
+=> Output a recommendation for (user,item) pair using (model) and (db)
+    --> output n sentences as a review prediction
+    --> use user or item as neighbour similarity
+    --> mean normalize ratings
+----------------
+
+predict_review.py
+usage: predict_review.py [--neigh NEIGH] model db
+
+=> Output Mean Rouge for full review prediction (model) on the test reviews in (db)
+    --> use user or item as neighbour similarity
+----------------
+
+predict_rating.py
+usage: predict_rating.py [--neigh NEIGH] model db
+
+=> Output MSE for (model) on the test reviews in (db)
+    --> use user or item as neighbour similarity
+----------------
+
+predict_sentences.py
+usage: predict_sentences.py [--n N] [--neigh NEIGH] model db
+
+=> Output Mean Rouge for multi-sent prediction (model) on the test reviews in (db)
+    --> use user or item as neighbour similarity
+----------------
+
+generate_wordcloud.py
+usage: generate_wordcloud.py [--n N] model word
+
+=> Generates wordcloud for word or label (word)
+    --> takes the n closests word
+----------------
+
+auto_wordclouds.py
+usage: auto_wordclouds.py [--n N] model name_model
+
+=> Generates wordclouds for the 5 ratings in (model) outputs 5 * (name_model_<rating>.png)
+    --> takes the n closests word
+
+----------------
+
+DB_baselines.py
+usage: DB_baselines.py  [--latent LATENT] [--epochs EPOCHS][--alpha ALPHA] [--reg REG] db
+
+=> Compute Classical baselines on (db) test set
+    --> latent space size
+    --> number of training epochs
+    --> gradient step
+    --> regularization strength
+----------------
+
+rouge_baseline.py
+usage: rouge_baseline.py [--neigh NEIGH] [--n N] db
+
+=> Compute Rouge-1,2,3 baseline on (db) test set
+    --> using user or item similarity
+    --> with 0,1 or (>= 2) multiple sentences /!\ can be very long /!\
+----------------
+
+treebank_to_R2V.py
+usage: treebank_to_R2V.py [--output OUTPUT] [--classes CLASSES][--full_sentences FULL_SENTENCES] datafolder
+
+=> Format treebank in (datafolder) for d2v format
+    --> choose output
+    --> number of classes (2 or 5)
+    --> train sentences include labels for near sentence prediction
+----------------
+
+treebank_results.py
+usage: treebank_results.py [--classes CLASSES] [--near_sent NEAR_SENT] model
+
+=> Compute Treebank accuracy
+    --> 2 or 5 classes
+    --> near sentences instead of near opinion labels
+
+
+------------------
+CREDITS
+------------------
+-> Code for d2v from Tomas Mikolov et al. - https://code.google.com/p/word2vec/
+-> Code to load sentiment treebank from Thomas Moreau - https://github.com/tomMoral/sentana
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -8,7 +8,6 @@ def run(args):
     if args.type not in types:
         print("data type not supported, supported types are {} ".format(types.keys()))
 
-    print(args.zipped)
 
     data_iterator = BufferedShuffledIterator(5000,types[args.type](args.data,zipped=args.zipped,encoding=args.encoding))
     db = Database.build(args.output,data_iterator.iterate())
