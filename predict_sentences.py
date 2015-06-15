@@ -144,6 +144,7 @@ def k_sim(model, db,neigh="item",n=None):
             avg_sent = getSentAVG(user,db)
             if avg_sent is not None:
                 ptext = predict_text(model,vect,list_text,round(avg_sent))
+                cpt_sent += avg_sent
             else:
                 ptext = None
 
@@ -157,7 +158,6 @@ def k_sim(model, db,neigh="item",n=None):
         if len(ptext) < 3 or len(rtext) < 3:
             cpt_skipped += 1
             continue
-
 
 
         r1,r2,r3 = rouge_1_2_3_metric(rtext,ptext)
