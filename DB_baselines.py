@@ -1,11 +1,9 @@
 # coding: utf-8
 import gensim.corpora
-import PoussCB.data
-import PoussCB.biases
-import PoussCB.evaluations
-import PoussCB.collaborative_filtering
-import PoussCB.texts
-import PoussCB.unified_recsys
+import ClassicCB.data
+import ClassicCB.biases
+import ClassicCB.evaluations
+import ClassicCB.collaborative_filtering
 from VectReco.Database import Database
 from random import shuffle
 import argparse
@@ -13,37 +11,37 @@ import argparse
 def load_data(filename):
     print("Loading data")
     db = Database(filename)
-    training_reviews, test_reviews = PoussCB.data.load_from_database(db, load_texts=True)
+    training_reviews, test_reviews = ClassicCB.data.load_from_database(db, load_texts=True)
     shuffle(training_reviews)
-    training_reviews, validation_reviews = PoussCB.data.split_sets(training_reviews)
-    evaluation = PoussCB.evaluations.RmseEvaluation(training_reviews, validation_reviews, test_reviews)
+    training_reviews, validation_reviews = ClassicCB.data.split_sets(training_reviews)
+    evaluation = ClassicCB.evaluations.RmseEvaluation(training_reviews, validation_reviews, test_reviews)
     return evaluation, training_reviews, validation_reviews
 
 
 def run_overall_bias(training_reviews):
     print("\nOverall bias")
-    overall_bias = PoussCB.biases.OverallBias()
+    overall_bias = ClassicCB.biases.OverallBias()
     overall_bias.fit(training_reviews)
     return overall_bias
 
 
 def run_user_bias(training_reviews):
     print("\nUser bias")
-    user_bias = PoussCB.biases.UserBias()
+    user_bias = ClassicCB.biases.UserBias()
     user_bias.fit(training_reviews)
     return user_bias
 
 
 def run_item_bias(training_reviews):
     print("\nItem bias")
-    item_bias = PoussCB.biases.ItemBias()
+    item_bias = ClassicCB.biases.ItemBias()
     item_bias.fit(training_reviews)
     return item_bias
 
 
 def run_collaborative_filtering(training_reviews, validation_reviews, k, epochs, eta_0, l2_weight):
     print("\nCollaborative filtering")
-    colfil = PoussCB.collaborative_filtering.StochasticGradientMatrixFactorization(k, epochs, eta_0, l2_weight)
+    colfil = ClassicCB.collaborative_filtering.StochasticGradientMatrixFactorization(k, epochs, eta_0, l2_weight)
     colfil.fit_with_validation(training_reviews, validation_reviews)
     return colfil
 

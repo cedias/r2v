@@ -1,8 +1,8 @@
 # coding=utf-8
 import numpy as np
 
-from PoussCB.biases import OverallBias
-from PoussCB.evaluations import RmseEvaluation
+from ClassicCB.biases import OverallBias
+from ClassicCB.evaluations import RmseEvaluation
 
 
 class StochasticGradientMatrixFactorization(OverallBias):
