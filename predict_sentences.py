@@ -18,9 +18,9 @@ def getAllReviews(db,test=False):
     con = sqlite3.connect(db)
     c = con.cursor()
     if test:
-        c.execute("SELECT item,user,rating FROM reviews WHERE test ORDER BY user")
+        c.execute("SELECT item,user,rating FROM reviews WHERE test")
     else:
-        c.execute("SELECT item,user,rating FROM reviews WHERE not test ORDER BY user")
+        c.execute("SELECT item,user,rating FROM reviews WHERE not test")
     return c.fetchall()
 
 def getReviewText(db,user,item):
@@ -142,7 +142,7 @@ def k_sim(model, db,neigh="item",n=None):
             cpt_sent += 1
         else:
             avg_sent = getSentAVG(user,db)
-            if avg_sent is not Nonet:
+            if avg_sent is not None:
                 ptext = predict_text(model,vect,list_text,round(avg_sent))
             else:
                 ptext = None
