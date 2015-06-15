@@ -1,0 +1,33 @@
+UNIFIED VECTOR SPACE MODEL FOR ENRICHED RECOMMENDATION CODE
+===========================================================
+Tested with Python 3.4
+
+Requirements:
+    - gcc
+    - Scipy
+    - Numpy
+    - Gensim
+    - SQLITE3
+    - Scikit-Learn
+
+To install:
+
+1) Install dependencies
+
+    pip install -r requirements.txt
+
+2) Compile C word2vec:
+
+    cd d2v
+    make
+
+To try recommender system:
+(threads default 8)
+python3.4 --Threads <INT> demo.py
+
+
+
+
+
+
+

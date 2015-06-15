@@ -30,4 +30,4 @@ for l in labels:
     # Open a plot of the generated image.
     plt.imshow(wordcloud)
     plt.axis("off")
-    plt.savefig("/home/dias/Bureau/wordcloud/{}_{}.png".format(args.name_model,l))
+    plt.savefig("{}_{}.png".format(args.name_model,l))
