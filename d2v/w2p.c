@@ -34,6 +34,11 @@ struct vocab_word {
     char *word, *code, codelen;
 };
 
+struct multi_word {
+    char *user;
+    char *item;   
+} typedef mword;
+
 char train_file[MAX_STRING], output_file[MAX_STRING];
 char save_vocab_file[MAX_STRING], read_vocab_file[MAX_STRING];
 struct vocab_word *vocab;
@@ -45,9 +50,22 @@ real alpha = 0.025, starting_alpha, sample = 1e-3;
 real *syn0, *syn1, *syn1neg, *expTable;
 clock_t start;
 
+
 int hs = 0, negative = 5;
 const int table_size = 1e8;
 int *table;
+
+mword newMultiWord(){
+    mword m;
+    m.user = (char *)calloc(MAX_STRING, sizeof(char));
+    m.item = (char *)calloc(MAX_STRING, sizeof(char));
+    return m;
+}
+
+void freeMultiWord(mword m){
+    free(m.user);
+    free(m.item);
+}
 
 void InitUnigramTable() {
     int a, i;
@@ -76,12 +94,17 @@ void InitUnigramTable() {
 }
 
 // Reads a single word from a file, assuming space + tab + EOL to be word boundaries
-void ReadWord(char *word, FILE *fin) {
-    int a = 0, ch;
+void ReadWord(char *word,mword *multi, FILE *fin) {
+    int a = 0, ch, mw = 0;
+    const char sep[2] = "~";
 
     while (!feof(fin)) {
 
         ch = fgetc(fin);
+
+        if (ch == '~'){
+            mw = a;
+        }
 
         if (ch == 13)
             continue;
@@ -91,6 +114,13 @@ void ReadWord(char *word, FILE *fin) {
             if (a > 0) {
                 if (ch == '\n')
                     ungetc(ch, fin);
+
+                if (mw != 0){
+                   strcpy(multi->user,strtok(word, sep));
+                   strcpy(multi->item,strtok(NULL, sep));
+                   word[0] = 0;
+                }
+
                 break;
             }
 
@@ -141,7 +171,7 @@ int SearchVocab(char *word) {
 // Reads a word and returns its index in the vocabulary
 int ReadWordIndex(FILE *fin) {
     char word[MAX_STRING];
-    ReadWord(word, fin);
+    ReadWord(word,NULL, fin);
 
     if (feof(fin))
         return -1;
@@ -247,8 +277,9 @@ void ReduceVocab() {
 
 void LearnVocabFromTrainFile() {
     char word[MAX_STRING];
+    mword multi = newMultiWord();
     FILE *fin;
-    long long a, i;
+    long long a, i,user,item;
 
     for (a = 0; a < vocab_hash_size; a++)
         vocab_hash[a] = -1;
@@ -264,28 +295,62 @@ void LearnVocabFromTrainFile() {
     AddWordToVocab((char *)"</s>");
 
     while (1) {
-        ReadWord(word, fin);
+        ReadWord(word,&multi,fin);
 
         if (feof(fin)) 
             break;
 
-        train_words++;
+        if(word[0] != 0){
 
-        if ((debug_mode > 1) && (train_words % 100000 == 0)) {
-            printf("%lldK%c", train_words / 1000, 13);
-            fflush(stdout);
+            train_words++;
+
+            if ((debug_mode > 1) && (train_words % 100000 == 0)) {
+                printf("%lldK%c", train_words / 1000, 13);
+                fflush(stdout);
+            }
+
+            i = SearchVocab(word);
+
+            if (i == -1) {
+                a = AddWordToVocab(word);
+                vocab[a].cn = 1;
+            } else
+                vocab[i].cn++;
+
+            if (vocab_size > vocab_hash_size * 0.7)
+                ReduceVocab();
         }
+        else
+        {
 
-        i = SearchVocab(word);
+            train_words++;
+            train_words++;
 
-        if (i == -1) {
-            a = AddWordToVocab(word);
-            vocab[a].cn = 1;
-        } else
-            vocab[i].cn++;
+            if ((debug_mode > 1) && (train_words % 100000 == 0)) {
+                printf("%lldK%c", train_words / 1000, 13);
+                fflush(stdout);
+            }
 
-        if (vocab_size > vocab_hash_size * 0.7)
-            ReduceVocab();
+
+            item = SearchVocab(multi.item);
+            user = SearchVocab(multi.user);
+
+            if (item == -1) {
+                a = AddWordToVocab(multi.item);
+                vocab[a].cn = 1;
+            } else
+                vocab[item].cn++;
+
+            if (user == -1) {
+                a = AddWordToVocab(multi.user);
+                vocab[a].cn = 1;
+            } else
+                vocab[user].cn++;
+
+            if (vocab_size > vocab_hash_size * 0.7)
+                ReduceVocab();
+
+        }
     }
 
     SortVocab();
@@ -297,6 +362,7 @@ void LearnVocabFromTrainFile() {
 
     file_size = ftell(fin);
     fclose(fin);
+    freeMultiWord(multi);
 }
 
 
@@ -501,7 +567,7 @@ void *TrainModelThread(void *id) {
 void TrainModel() {
     long a, b, c, d;
     FILE *fo;
-    pthread_t *pt = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
+    //pthread_t *pt = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
     printf("Starting training using file %s\n", train_file);
     starting_alpha = alpha;
     LearnVocabFromTrainFile();
@@ -516,11 +582,12 @@ void TrainModel() {
 
     start = clock();
 
-    for (a = 0; a < num_threads; a++)
-        pthread_create(&pt[a], NULL, TrainModelThread, (void *)a);
+   // NOT TRAINING FOR DEBUG
+    // for (a = 0; a < num_threads; a++)
+    //     pthread_create(&pt[a], NULL, TrainModelThread, (void *)a);
 
-    for (a = 0; a < num_threads; a++)
-        pthread_join(pt[a], NULL);
+    // for (a = 0; a < num_threads; a++)
+    //     pthread_join(pt[a], NULL);
 
     fo = fopen(output_file, "wb");
 
@@ -592,7 +659,7 @@ int main(int argc, char **argv) {
         printf("\t\tAssume the first token at the beginning of each line is a sentence ID. This token will be trained\n");
         printf("\t\twith full sentence context instead of just the window. Use 1 to turn on.\n");
         printf("\nExamples:\n");
-        printf("./word2vec -train data.txt -output vec.txt -size 200 -window 5 -sample 1e-4 -negative 5 -hs 0 -binary 0 -cbow 1 -iter 3\n\n");
+        printf("./d2v -train data.txt -output vec.txt -size 200 -window 5 -sample 1e-4 -negative 5 -binary 0 -iter 3\n\n");
         return 0;
     }
 

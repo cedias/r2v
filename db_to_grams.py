@@ -33,7 +33,7 @@ def iterReviews(db):
                 if len(sent) < 2:
                     continue
                 else:
-                    yield (sent.split(" "), ['u_{}'.format(uname),'i_{}'.format(pid), 'r_{}'.format(rating)])
+                    yield (sent.split(" "), ['u_{}~i_{}'.format(uname,pid), 'r_{}'.format(rating)])
                     i += 1
 
 
