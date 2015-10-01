@@ -23,6 +23,7 @@
 #define MAX_EXP 6
 #define MAX_SENTENCE_LENGTH 1000
 #define MAX_CODE_LENGTH 40
+#define MAX_LABELS 2
 
 const int vocab_hash_size = 30000000;  // Maximum 30 * 0.7 = 21M words in the vocabulary
 
@@ -36,7 +37,9 @@ struct vocab_word {
 
 struct multi_word {
     char *user;
-    char *item;   
+    char *item;
+    long long uindex;
+    long long iindex;   
 } typedef mword;
 
 char train_file[MAX_STRING], output_file[MAX_STRING];
@@ -169,9 +172,15 @@ int SearchVocab(char *word) {
 }
 
 // Reads a word and returns its index in the vocabulary
-int ReadWordIndex(FILE *fin) {
+int ReadWordIndex(FILE *fin, mword *multi) {
     char word[MAX_STRING];
-    ReadWord(word,NULL, fin);
+    ReadWord(word,multi, fin);
+
+    if(word[0] == 0){
+        multi->uindex = SearchVocab(multi->user);
+        multi->iindex = SearchVocab(multi->item);
+        return -2;
+    }
 
     if (feof(fin))
         return -1;
@@ -400,6 +409,7 @@ void *TrainModelThread(void *id) {
     long long a, b, d,  word, last_word, sentence_length = 0, sentence_position = 0;
     long long word_count = 0, last_word_count = 0, sen[MAX_SENTENCE_LENGTH + 1];
     long long l1, l2, c, target, label, local_iter = iter;
+    long long labels[MAX_LABELS];
     unsigned long long next_random = (long long)id;
     real f, g;
     clock_t now;
@@ -407,9 +417,11 @@ void *TrainModelThread(void *id) {
     real *neu1e = (real *)calloc(layer1_size, sizeof(real));
     FILE *fi = fopen(train_file, "rb");
     fseek(fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
+    mword multi = newMultiWord();
 
     while (1) {
 
+        /*MAJ AFFICHAGE*/
         if (word_count - last_word_count > 10000) {
             word_count_actual += word_count - last_word_count;
             last_word_count = word_count;
@@ -427,14 +439,21 @@ void *TrainModelThread(void *id) {
                 alpha = starting_alpha * 0.0001;
         }
 
+        /*MAJ SEN*/
         if (sentence_length == 0) {
             while (1) {
-                word = ReadWordIndex(fi);
+                word = ReadWordIndex(fi,&multi);
 
                 if (feof(fi))
                     break;
                 if (word == -1)
                     continue;
+
+                if (word == -2){
+                    sen[sentence_length] = word;
+                    sentence_length++;
+                    continue;
+                }
 
                 word_count++;
 
@@ -458,6 +477,7 @@ void *TrainModelThread(void *id) {
             sentence_position = 0;
         }
 
+        /*Local iter*/
         if (feof(fi) || (word_count > train_words / num_threads)) {
             word_count_actual += word_count - last_word_count;
             local_iter--;
@@ -477,6 +497,9 @@ void *TrainModelThread(void *id) {
         if (word == -1)
             continue;
 
+        if (word == -2)
+            word = multi.uindex
+
         for (c = 0; c < layer1_size; c++)
             neu1[c] = 0;
 
@@ -493,8 +516,10 @@ void *TrainModelThread(void *id) {
                 if (sentence_vectors)
                     if (a >= window * 2 + sentence_vectors - b)
                         c = 0;
+                    
                 if (c < 0)
                     continue;
+
                 if (c >= sentence_length)
                     continue;
 
@@ -502,7 +527,9 @@ void *TrainModelThread(void *id) {
 
                 if (last_word == -1)
                     continue;
+
                 l1 = last_word * layer1_size;
+
                 for (c = 0; c < layer1_size; c++)
                     neu1e[c] = 0;
 
@@ -561,6 +588,7 @@ void *TrainModelThread(void *id) {
     fclose(fi);
     free(neu1);
     free(neu1e);
+    freeMultiWord(multi);
     pthread_exit(NULL);
 }
 
