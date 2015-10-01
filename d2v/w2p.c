@@ -23,7 +23,6 @@
 #define MAX_EXP 6
 #define MAX_SENTENCE_LENGTH 1000
 #define MAX_CODE_LENGTH 40
-#define MAX_LABELS 2
 
 const int vocab_hash_size = 30000000;  // Maximum 30 * 0.7 = 21M words in the vocabulary
 
@@ -406,15 +405,16 @@ void InitNet() {
 }
 
 void *TrainModelThread(void *id) {
+
     long long a, b, d,  word, last_word, sentence_length = 0, sentence_position = 0;
     long long word_count = 0, last_word_count = 0, sen[MAX_SENTENCE_LENGTH + 1];
     long long l1, l2, c, target, label, local_iter = iter;
-    long long labels[MAX_LABELS];
     unsigned long long next_random = (long long)id;
     real f, g;
     clock_t now;
     real *neu1 = (real *)calloc(layer1_size, sizeof(real));
     real *neu1e = (real *)calloc(layer1_size, sizeof(real));
+    real *sum = (real *)calloc(layer1_size, sizeof(real));
     FILE *fi = fopen(train_file, "rb");
     fseek(fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
     mword multi = newMultiWord();
@@ -471,7 +471,9 @@ void *TrainModelThread(void *id) {
 
                 sen[sentence_length] = word;
                 sentence_length++;
-                if (sentence_length >= MAX_SENTENCE_LENGTH) break;
+
+                if (sentence_length >= MAX_SENTENCE_LENGTH)
+                    break;
             }
 
             sentence_position = 0;
@@ -494,11 +496,8 @@ void *TrainModelThread(void *id) {
 
         word = sen[sentence_position];
 
-        if (word == -1)
+        if (word == -1 || word == -2)
             continue;
-
-        if (word == -2)
-            word = multi.uindex
 
         for (c = 0; c < layer1_size; c++)
             neu1[c] = 0;
@@ -528,54 +527,115 @@ void *TrainModelThread(void *id) {
                 if (last_word == -1)
                     continue;
 
-                l1 = last_word * layer1_size;
+                if (last_word == -2)
+                {
+                    l1 = multi.uindex * layer1_size;
+                    l2 = multi.iindex * layer1_size;
 
-                for (c = 0; c < layer1_size; c++)
-                    neu1e[c] = 0;
-
-                // NEGATIVE SAMPLING
-                if (negative > 0)
-                    for (d = 0; d < negative + 1; d++) {
-
-                        if (d == 0) {
-                            target = word;
-                            label = 1;
-                        } else {
-
-                            next_random = next_random * (unsigned long long)25214903917 + 11;
-                            target = table[(next_random >> 16) % table_size];
-
-                            if (target == 0)
-                                target = next_random % (vocab_size - 1) + 1;
-
-                            if (target == word)
-                                continue;
-                            label = 0;
-                        }
-
-                        l2 = target * layer1_size;
-                        f = 0;
-                        for (c = 0; c < layer1_size; c++)
-                            f += syn0[c + l1] * syn1neg[c + l2];
-
-                        if (f > MAX_EXP)
-                            g = (label - 1) * alpha;
-                        else
-                            if (f < -MAX_EXP)
-                                g = (label - 0) * alpha;
-                            else 
-                                g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
-
-                        for (c = 0; c < layer1_size; c++)
-                            neu1e[c] += g * syn1neg[c + l2];
-
-                        for (c = 0; c < layer1_size; c++)
-                            syn1neg[c + l2] += g * syn0[c + l1];
+                    for (c = 0; c < layer1_size; c++){
+                        neu1e[c] = 0;
+                        sum[c] = syn0[c + l1] + syn0[c + l2];
                     }
 
-                // Learn weights input -> hidden
-                for (c = 0; c < layer1_size; c++)
-                    syn0[c + l1] += neu1e[c];
+                    // NEGATIVE SAMPLING
+                    if (negative > 0)
+                        for (d = 0; d < negative + 1; d++) {
+
+                            if (d == 0) {
+                                target = word;
+                                label = 1;
+                            } else {
+
+                                next_random = next_random * (unsigned long long)25214903917 + 11;
+                                target = table[(next_random >> 16) % table_size];
+
+                                if (target == 0)
+                                    target = next_random % (vocab_size - 1) + 1;
+
+                                if (target == word)
+                                    continue;
+                                label = 0;
+                            }
+
+                            l2 = target * layer1_size;
+                            f = 0;
+                            for (c = 0; c < layer1_size; c++)
+                                f += sum[c] * syn1neg[c + l2];
+
+                            if (f > MAX_EXP)
+                                g = (label - 1) * alpha;
+                            else
+                                if (f < -MAX_EXP)
+                                    g = (label - 0) * alpha;
+                                else 
+                                    g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
+
+                            for (c = 0; c < layer1_size; c++)
+                                neu1e[c] += g * syn1neg[c + l2];
+
+                            for (c = 0; c < layer1_size; c++)
+                                syn1neg[c + l2] += g * sum[c + l1];
+                        }
+
+                    // Learn weights input -> hidden
+                    l2 = multi.iindex * layer1_size;
+
+                    for (c = 0; c < layer1_size; c++)
+                        syn0[c + l1] += neu1e[c];
+                        syn0[c + l2] += neu1e[c];
+                }
+                else
+                {
+
+                    l1 = last_word * layer1_size;
+
+                    for (c = 0; c < layer1_size; c++)
+                        neu1e[c] = 0;
+
+                    // NEGATIVE SAMPLING
+                    if (negative > 0)
+                        for (d = 0; d < negative + 1; d++) {
+
+                            if (d == 0) {
+                                target = word;
+                                label = 1;
+                            } else {
+
+                                next_random = next_random * (unsigned long long)25214903917 + 11;
+                                target = table[(next_random >> 16) % table_size];
+
+                                if (target == 0)
+                                    target = next_random % (vocab_size - 1) + 1;
+
+                                if (target == word)
+                                    continue;
+                                label = 0;
+                            }
+
+                            l2 = target * layer1_size;
+                            f = 0;
+                            for (c = 0; c < layer1_size; c++)
+                                f += syn0[c + l1] * syn1neg[c + l2];
+
+                            if (f > MAX_EXP)
+                                g = (label - 1) * alpha;
+                            else
+                                if (f < -MAX_EXP)
+                                    g = (label - 0) * alpha;
+                                else 
+                                    g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
+
+                            for (c = 0; c < layer1_size; c++)
+                                neu1e[c] += g * syn1neg[c + l2];
+
+                            for (c = 0; c < layer1_size; c++)
+                                syn1neg[c + l2] += g * syn0[c + l1];
+                        }
+
+                    // Learn weights input -> hidden
+                    for (c = 0; c < layer1_size; c++)
+                        syn0[c + l1] += neu1e[c];
+                }
             }
 
             sentence_position++;
@@ -595,7 +655,7 @@ void *TrainModelThread(void *id) {
 void TrainModel() {
     long a, b, c, d;
     FILE *fo;
-    //pthread_t *pt = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
+    pthread_t *pt = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
     printf("Starting training using file %s\n", train_file);
     starting_alpha = alpha;
     LearnVocabFromTrainFile();
@@ -611,11 +671,11 @@ void TrainModel() {
     start = clock();
 
    // NOT TRAINING FOR DEBUG
-    // for (a = 0; a < num_threads; a++)
-    //     pthread_create(&pt[a], NULL, TrainModelThread, (void *)a);
+    for (a = 0; a < num_threads; a++)
+        pthread_create(&pt[a], NULL, TrainModelThread, (void *)a);
 
-    // for (a = 0; a < num_threads; a++)
-    //     pthread_join(pt[a], NULL);
+    for (a = 0; a < num_threads; a++)
+        pthread_join(pt[a], NULL);
 
     fo = fopen(output_file, "wb");
 
