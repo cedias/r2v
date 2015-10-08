@@ -7,6 +7,11 @@ all: d2v
 d2v : w2p.c
 	$(CC) w2p.c -o d2v $(CFLAGS)
 
+debug : clean deb
+
+deb :  w2p.c
+	$(CC) w2p.c -o d2v $(CFLAGS) -g
+
 clean:
 	rm -rf d2v
 
