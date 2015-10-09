@@ -17,7 +17,7 @@ def getAllReviews(db, test=False):
     return c.fetchall()
 
 
-def k_sim(model, db):
+def k_sim(model, db,pond=True):
 
     print("prepping data")
 
@@ -38,19 +38,41 @@ def k_sim(model, db):
     user_vec = np.array(user_vec)
     item_vec = np.array(item_vec)
 
-    dp = np.dot(sum_vec,r_vec)
-    sum_args = np.argmax(dp, axis=1)
+    if pond:
+        dp = np.dot(sum_vec,r_vec)
 
-    dp = np.dot(user_vec,r_vec)
-    user_args = np.argmax(dp, axis=1)
-
-    dp = np.dot(item_vec,r_vec)
-    item_args = np.argmax(dp, axis=1)
+        res = ratings[np.argmax(dp, axis=1)]*np.max(dp,axis=1)
+        sum_max  = np.max(dp,axis=1)
 
 
-    print(dp.shape)
-    err = ((ratings[sum_args]+ratings[user_args]+ratings[item_args])/3 - ground_truth) ** 2
-    print(np.mean(err))
+        dp = np.dot(user_vec,r_vec)
+        res += ratings[np.argmax(dp, axis=1)] * np.max(dp,axis=1)
+        sum_max  += np.max(dp,axis=1)
+
+        dp = np.dot(item_vec,r_vec)
+        res += ratings[np.argmax(dp, axis=1)]* np.max(dp,axis=1)
+        sum_max  += np.max(dp,axis=1)
+
+
+        print(dp.shape)
+        err = ((res/sum_max) - ground_truth) ** 2
+        print(np.mean(err))
+
+    else:
+
+        dp = np.dot(sum_vec,r_vec)
+        sum_args = np.argmax(dp, axis=1)
+
+        dp = np.dot(user_vec,r_vec)
+        user_args = np.argmax(dp, axis=1)
+
+        dp = np.dot(item_vec,r_vec)
+        item_args = np.argmax(dp, axis=1)
+
+
+        print(dp.shape)
+        err = ((ratings[sum_args]+ratings[user_args]+ratings[item_args])/3 - ground_truth) ** 2
+        print(np.mean(err))
 
     err = (ratings[rand] - ground_truth) ** 2
     print(np.mean(err))
@@ -60,8 +82,10 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("model", type=str)
 parser.add_argument("db", type=str)
+parser.add_argument("--pond",dest="pond",action="store_true")
 
 args = parser.parse_args()
 db = args.db
+pond = args.pond
 model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model, db)
+k_sim(model, db,pond)
