@@ -17,11 +17,15 @@ def getAllReviews(db, test=False):
     return c.fetchall()
 
 
-def k_sim(model, db,pond=True,solo=False):
+def k_sim(model, db,pond=True,solo=False,log=False):
 
     print("prepping data")
 
-    test_data = [(matutils.unitvec(model["u_{}".format(user)] + model["i_{}".format(item)]) ,matutils.unitvec(model["u_{}".format(user)]) ,matutils.unitvec(model["i_{}".format(item)]) , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
+    if log:
+        test_data = [(matutils.unitvec(np.nan_to_num(np.log(model["u_{}".format(user)])) +np.nan_to_num(np.log( model["i_{}".format(item)]))) ,matutils.unitvec(np.nan_to_num(np.log(model["u_{}".format(user)]))) ,matutils.unitvec(np.nan_to_num(np.log(model["i_{}".format(item)]))) , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
+
+    else:
+        test_data = [(matutils.unitvec(model["u_{}".format(user)] + model["i_{}".format(item)]) ,matutils.unitvec(model["u_{}".format(user)]) ,matutils.unitvec(model["i_{}".format(item)]) , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
 
     rating_indexs = [(matutils.unitvec(model[word]), float(word.split("_")[1])) for word in model.index2word if len(word) > 2 and word[0] == "r" and word[1] == "_"]
 
@@ -37,6 +41,8 @@ def k_sim(model, db,pond=True,solo=False):
     sum_vec = np.array(sum_vec)
     user_vec = np.array(user_vec)
     item_vec = np.array(item_vec)
+
+
 
     if solo:
         dp = np.dot(sum_vec,r_vec)
@@ -93,10 +99,11 @@ parser.add_argument("model", type=str)
 parser.add_argument("db", type=str)
 parser.add_argument("--pond",dest="pond",action="store_true")
 parser.add_argument("--solo",dest="solo",action="store_true")
-
+parser.add_argument("--log",dest="log",action="store_true")
 args = parser.parse_args()
 db = args.db
 pond = args.pond
 solo = args.solo
+log = args.log
 model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model, db,pond,solo)
+k_sim(model, db,pond,solo,log)
