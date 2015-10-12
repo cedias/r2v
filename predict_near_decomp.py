@@ -17,7 +17,7 @@ def getAllReviews(db, test=False):
     return c.fetchall()
 
 
-def k_sim(model, db,pond=True):
+def k_sim(model, db,pond=True,solo=False):
 
     print("prepping data")
 
@@ -38,7 +38,14 @@ def k_sim(model, db,pond=True):
     user_vec = np.array(user_vec)
     item_vec = np.array(item_vec)
 
-    if pond:
+    if solo:
+        dp = np.dot(sum_vec,r_vec)
+        sum_args = np.argmax(dp, axis=1)
+        print("User + Item = Rating")
+        err = (ratings[sum_args] - ground_truth) ** 2
+        print(np.mean(err))
+
+    elif pond:
         dp = np.dot(sum_vec,r_vec)
 
         res = ratings[np.argmax(dp, axis=1)]*np.max(dp,axis=1)
@@ -54,7 +61,7 @@ def k_sim(model, db,pond=True):
         sum_max  += np.max(dp,axis=1)
 
 
-        print(dp.shape)
+        print("User rating + Item rating  + (user + item) rating = Rating - Cos Sim ponderation")
         err = ((res/sum_max) - ground_truth) ** 2
         print(np.mean(err))
 
@@ -70,10 +77,12 @@ def k_sim(model, db,pond=True):
         item_args = np.argmax(dp, axis=1)
 
 
-        print(dp.shape)
+        print("User rating + Item rating  + (user + item) rating = Rating - no ponderation")
+
         err = ((ratings[sum_args]+ratings[user_args]+ratings[item_args])/3 - ground_truth) ** 2
         print(np.mean(err))
 
+    print("Random Baseline")
     err = (ratings[rand] - ground_truth) ** 2
     print(np.mean(err))
 
@@ -83,6 +92,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("model", type=str)
 parser.add_argument("db", type=str)
 parser.add_argument("--pond",dest="pond",action="store_true")
+parser.add_argument("--solo",dest="solo",action="store_true")
 
 args = parser.parse_args()
 db = args.db
