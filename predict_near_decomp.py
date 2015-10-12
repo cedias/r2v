@@ -97,5 +97,6 @@ parser.add_argument("--solo",dest="solo",action="store_true")
 args = parser.parse_args()
 db = args.db
 pond = args.pond
+solo = args.solo
 model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model, db,pond)
+k_sim(model, db,pond,solo)
