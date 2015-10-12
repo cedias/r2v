@@ -17,12 +17,12 @@ def getAllReviews(db, test=False):
     return c.fetchall()
 
 
-def k_sim(model, db,pond=True,solo=False,log=False):
+def k_sim(model, db,pond=True,solo=False,neg=False):
 
     print("prepping data")
 
-    if log:
-        test_data = [(matutils.unitvec(np.nan_to_num(np.log(model["u_{}".format(user)])) +np.nan_to_num(np.log( model["i_{}".format(item)]))) ,matutils.unitvec(np.nan_to_num(np.log(model["u_{}".format(user)]))) ,matutils.unitvec(np.nan_to_num(np.log(model["i_{}".format(item)]))) , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
+    if neg:
+        test_data = [(matutils.unitvec(model["i_{}".format(item)] - model["u_{}".format(user)]) ,matutils.unitvec(model["u_{}".format(user)]) ,matutils.unitvec(model["i_{}".format(item)]) , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
 
     else:
         test_data = [(matutils.unitvec(model["u_{}".format(user)] + model["i_{}".format(item)]) ,matutils.unitvec(model["u_{}".format(user)]) ,matutils.unitvec(model["i_{}".format(item)]) , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
@@ -99,11 +99,11 @@ parser.add_argument("model", type=str)
 parser.add_argument("db", type=str)
 parser.add_argument("--pond",dest="pond",action="store_true")
 parser.add_argument("--solo",dest="solo",action="store_true")
-parser.add_argument("--log",dest="log",action="store_true")
+parser.add_argument("--neg",dest="neg",action="store_true")
 args = parser.parse_args()
 db = args.db
 pond = args.pond
 solo = args.solo
-log = args.log
+neg = args.neg
 model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model, db,pond,solo,log)
+k_sim(model, db,pond,solo,neg)
