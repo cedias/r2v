@@ -31,9 +31,9 @@ def k_sim(model, db,norm=False):
     if norm:
         test_vec = preprocessing.normalize(test_vec,copy=False)
 
-    clf = linear_model.LogisticRegression(C=1e5)
-    scores = cross_validation.cross_val_score(clf, test_vec, ground_truth, cv=5,scoring="accuracy")
-    print(scores)
+    clf = linear_model.LogisticRegressionCV(C=10,cv=2,dual=False,n_jobs=-1,multi_class="multinomial")
+    score = clf.score(test_vec,ground_truth)
+    print(score)
 
 
 
