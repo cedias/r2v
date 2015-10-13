@@ -22,10 +22,8 @@ def get_dataset(model,db,norm):
     print("prepping data")
     test_data = [(model["u_{}".format(user)] + model["i_{}".format(item)] , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
     test_vec, ground_truth = zip(*test_data)
-    label_encoder = preprocessing.LabelEncoder()
     test_vec = np.array(test_vec)
     ground_truth = np.array(ground_truth)
-    ground_truth = label_encoder.fit_transform(ground_truth)
 
     if norm:
         test_vec = preprocessing.normalize(test_vec,copy=False)
@@ -42,29 +40,38 @@ def get_dataset(model,db,norm):
     test_labels=ground_truth[np.logical_not(rd)]
 
     print("{} vecteurs de test".format(len(train_vectors)))
-    return (train_vectors,train_labels,test_vectors,test_labels,label_encoder)
+    return (train_vectors,train_labels,test_vectors,test_labels)
 
 
-def get_multi_score(clf,x,y,label):
+def get_multi_score(clf,x,y):
     pred = clf.predict(x)
-    acc = accuracy_score(y,pred)
-    mse = mean_squared_error(label.inverse_transform(y),label.inverse_transform(pred))
+    mse = mean_squared_error(y,pred)
 
-    return (acc,mse)
+    return mse
 
 
 
 def k_sim(model, db,norm=False):
 
-    train_vectors,train_labels,test_vectors,test_labels,label_encoder =  get_dataset(model,db,norm)
+    train_vectors,train_labels,test_vectors,test_labels =  get_dataset(model,db,norm)
 
 
-    for c in [1,2,3,4,5]:
-        clf = linear_model.LogisticRegression(C=c,dual=False,multi_class="multinomial",solver="lbfgs")
+
+    clf = linear_model.LinearRegression()
+    clf.fit(train_vectors,train_labels)
+
+    print("TRAIN MSE: {}".format(get_multi_score(clf,train_vectors,train_labels)))
+    print("TEST  MSE: {}".format(get_multi_score(clf,test_vectors,test_labels)))
+
+
+    for c in np.arange(0.1,2,0.1):
+
+        clf = linear_model.Ridge(alpha=c)
         clf.fit(train_vectors,train_labels)
 
-        print("TRAIN: accuracy: {}, MSE: {}".format(*get_multi_score(clf,train_vectors,train_labels,label_encoder)))
-        print("TEST: accuracy: {}, MSE: {}".format(*get_multi_score(clf,test_vectors,test_labels,label_encoder)))
+        print("TRAIN MSE: {}".format(get_multi_score(clf,train_vectors,train_labels)))
+        print("TEST  MSE: {}".format(get_multi_score(clf,test_vectors,test_labels)))
+
 
 
 
