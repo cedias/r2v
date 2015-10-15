@@ -55,6 +55,11 @@ def main(args):
             buff.append("{} {}\n".format(label, " ".join(sent)))
             i += 1
 
+        if args.rating:
+            buff.append("{} {}\n".format(labels[0],labels[1]))
+            buff.append("{} {}\n {} {}\n".format(labels[0].split('~')[0],labels[1],labels[0].split('~')[1],labels[1]))
+            i += 3
+
         if len(buff) >= args.buff_size:
             shuffle(buff)
             for se in buff:
@@ -74,6 +79,7 @@ parser.add_argument("db", type=str)
 parser.add_argument("output", type=str, default="sentences.txt")
 parser.add_argument("--min_count", type=int, default=100)
 parser.add_argument("--min_sent_size", type=int, default=5)
+parser.add_argument("--rating",dest="rating",action="store_true")
 parser.add_argument("--buff_size", type=int, default=1000000)
 args = parser.parse_args()
 
