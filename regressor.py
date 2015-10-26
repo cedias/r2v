@@ -68,7 +68,7 @@ def get_multi_score(clf,x,y,vtarget):
         r_vec, ratings = zip(*rating_indexs)
         r_vec = np.array(r_vec).T
         dp = np.dot(pred,r_vec)
-        print(dp.shape())
+        print(dp.shape)
         err = (ratings[np.argmax(dp, axis=1)] - y) ** 2
         mse = np.mean(err)
 
