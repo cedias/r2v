@@ -63,9 +63,9 @@ def get_multi_score(clf,x,y):
 
 
 
-def k_sim(model, db,norm=False):
+def k_sim(model, db,norm=False,conc=False,vtarget=False):
 
-    train_vectors,train_labels,test_vectors,test_labels =  get_dataset(model,db,norm)
+    train_vectors,train_labels,test_vectors,test_labels =  get_dataset(model,db,norm,conc,vtarget)
 
 
 
