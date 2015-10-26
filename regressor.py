@@ -6,6 +6,8 @@ from random import shuffle,randint
 from sklearn import preprocessing,cross_validation,linear_model
 from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score, mean_squared_error
+from gensim import matutils
+
 
 
 def getAllReviews(db, test=False):
@@ -55,9 +57,19 @@ def get_dataset(model,db,norm,conc,vtarget):
     return (train_vectors,train_labels,test_vectors,test_labels)
 
 
-def get_multi_score(clf,x,y):
+def get_multi_score(clf,x,y,vtarget):
     pred = clf.predict(x)
-    mse = mean_squared_error(y,pred)
+
+    if not vtarget:
+        mse = mean_squared_error(y,pred)
+
+    else:
+        rating_indexs = [(matutils.unitvec(model[word]), float(word.split("_")[1])) for word in model.index2word if len(word) > 2 and word[0] == "r" and word[1] == "_"]
+        r_vec, ratings = zip(*rating_indexs)
+        r_vec = np.array(r_vec).T
+        dp = np.dot(pred,r_vec)
+        err = (ratings[np.argmax(dp, axis=1)] - y) ** 2
+        mse = np.mean(err)
 
     return mse
 
@@ -72,8 +84,8 @@ def k_sim(model, db,norm=False,conc=False,vtarget=False):
     clf = linear_model.LinearRegression()
     clf.fit(train_vectors,train_labels)
 
-    print("TRAIN MSE: {}".format(get_multi_score(clf,train_vectors,train_labels)))
-    print("TEST  MSE: {}".format(get_multi_score(clf,test_vectors,test_labels)))
+    print("TRAIN MSE: {}".format(get_multi_score(clf,train_vectors,train_labels,vtarget)))
+    print("TEST  MSE: {}".format(get_multi_score(clf,test_vectors,test_labels,vtarget)))
 
 
     for c in np.arange(0.1,2,0.1):
@@ -81,8 +93,8 @@ def k_sim(model, db,norm=False,conc=False,vtarget=False):
         clf = linear_model.Ridge(alpha=c)
         clf.fit(train_vectors,train_labels)
 
-        print("TRAIN MSE: {}".format(get_multi_score(clf,train_vectors,train_labels)))
-        print("TEST  MSE: {}".format(get_multi_score(clf,test_vectors,test_labels)))
+        print("TRAIN MSE: {}".format(get_multi_score(clf,train_vectors,train_labels,vtarget)))
+        print("TEST  MSE: {}".format(get_multi_score(clf,test_vectors,test_labels,vtarget)))
 
 
 
