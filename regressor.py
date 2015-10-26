@@ -18,9 +18,21 @@ def getAllReviews(db, test=False):
     return c.fetchall()
 
 
-def get_dataset(model,db,norm):
+def get_dataset(model,db,norm,conc,vtarget):
     print("prepping data")
-    test_data = [(model["u_{}".format(user)] + model["i_{}".format(item)] , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
+
+    if not vtarget:
+        if not conc:
+            test_data = [(model["u_{}".format(user)] + model["i_{}".format(item)] , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
+        else:
+            test_data = [(np.concatenate((model["u_{}".format(user)],model["i_{}".format(item)])) , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
+    else:
+        if not conc:
+            test_data = [(model["u_{}".format(user)] + model["i_{}".format(item)] , model["r_"+str(rating)]) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
+        else:
+            test_data = [(np.concatenate((model["u_{}".format(user)],model["i_{}".format(item)])) , model["r_"+str(rating)]) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
+
+
     test_vec, ground_truth = zip(*test_data)
     test_vec = np.array(test_vec)
     ground_truth = np.array(ground_truth)
@@ -75,17 +87,18 @@ def k_sim(model, db,norm=False):
 
 
 
-
-
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument("model", type=str)
 parser.add_argument("db", type=str)
 parser.add_argument("--norm",dest="norm",action="store_true")
+parser.add_argument("--concat",dest="concat",action="store_true")
+parser.add_argument("--vec_target",dest="vec_target",action="store_true")
 
 args = parser.parse_args()
 db = args.db
 norm = args.norm
+conc = args.concat
+vtarget = args.vec_target
 model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model, db,norm)
+k_sim(model, db,norm,conc,vtarget)
