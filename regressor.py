@@ -66,6 +66,7 @@ def get_multi_score(clf,x,y,vtarget):
     else:
         rating_indexs = [(matutils.unitvec(model[word]), float(word.split("_")[1])) for word in model.index2word if len(word) > 2 and word[0] == "r" and word[1] == "_"]
         r_vec, ratings = zip(*rating_indexs)
+        ratings = np.array(ratings)
         r_vec = np.array(r_vec).T
         dp = np.dot(pred,r_vec)
         dp2 = np.dot(y,r_vec)
