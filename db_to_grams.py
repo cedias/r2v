@@ -57,7 +57,7 @@ def main(args):
 
         if args.rating:
             buff.append("{} {}\n".format(labels[0],labels[1]))
-            buff.append("{} {}\n {} {}\n".format(labels[0].split('~')[0],labels[1],labels[0].split('~')[1],labels[1]))
+            buff.append("{} {}\n{} {}\n".format(labels[0].split('~')[0],labels[1],labels[0].split('~')[1],labels[1]))
             i += 3
 
         if len(buff) >= args.buff_size:
