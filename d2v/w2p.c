@@ -44,7 +44,7 @@ struct multi_word {
 char train_file[MAX_STRING], output_file[MAX_STRING];
 char save_vocab_file[MAX_STRING], read_vocab_file[MAX_STRING];
 struct vocab_word *vocab;
-int binary = 0, cbow = 1, debug_mode = 2, window = 5, min_count = 5, num_threads = 12, min_reduce = 1;
+int binary = 0, cbow = 1, debug_mode = 2, window = 5, min_count = 5, num_threads = 12, min_reduce = 1, no_train=0;
 int *vocab_hash;
 long long vocab_max_size = 1000, vocab_size = 0, layer1_size = 100, sentence_vectors = 0;
 long long train_words = 0, word_count_actual = 0, iter = 5, file_size = 0, classes = 0;
@@ -705,12 +705,13 @@ void TrainModel() {
     start = clock();
 
    //NOT TRAINING FOR DEBUG
-    for (a = 0; a < num_threads; a++)
-        pthread_create(&pt[a], NULL, TrainModelThread, (void *)a);
+    if(!no_train){
+	    for (a = 0; a < num_threads; a++)
+		pthread_create(&pt[a], NULL, TrainModelThread, (void *)a);
 
-    for (a = 0; a < num_threads; a++)
-        pthread_join(pt[a], NULL);
-
+	    for (a = 0; a < num_threads; a++)
+		pthread_join(pt[a], NULL);
+    }
     fo = fopen(output_file, "wb");
 
     // Save the word vectors
@@ -794,6 +795,7 @@ int main(int argc, char **argv) {
     if ((i = ArgPos((char *)"-alpha", argc, argv)) > 0) alpha = atof(argv[i + 1]);
     if ((i = ArgPos((char *)"-output", argc, argv)) > 0) strcpy(output_file, argv[i + 1]);
     if ((i = ArgPos((char *)"-window", argc, argv)) > 0) window = atoi(argv[i + 1]);
+    if ((i = ArgPos((char *)"-notrain", argc, argv)) > 0) no_train = atoi(argv[i + 1]);
     if ((i = ArgPos((char *)"-sample", argc, argv)) > 0) sample = atof(argv[i + 1]);
     if ((i = ArgPos((char *)"-negative", argc, argv)) > 0) negative = atoi(argv[i + 1]);
     if ((i = ArgPos((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);

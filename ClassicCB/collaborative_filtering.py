@@ -3,6 +3,8 @@ import numpy as np
 
 from ClassicCB.biases import OverallBias
 from ClassicCB.evaluations import RmseEvaluation
+import pyximport; pyximport.install()
+import ClassicCB.update_profiles as up
 
 
 class StochasticGradientMatrixFactorization(OverallBias):
@@ -72,6 +74,7 @@ class StochasticGradientMatrixFactorization(OverallBias):
         self.items[item] = (b_i - self.learning_rate * (delta + self.l2_weight * b_i),
                             gamma_i - self.learning_rate * (delta * gamma_u + self.l2_weight * gamma_i))
 
+
     def one_epoch(self, training_reviews):
         u"""
         Helper function that implements one epoch: a pass on the training reviews.
@@ -79,6 +82,7 @@ class StochasticGradientMatrixFactorization(OverallBias):
         :param training_reviews: the training reviews.
         :return: nothing, parameters are updated in place.
         """
+
         arr = np.arange(len(training_reviews))
         np.random.shuffle(arr)
         for index in arr:
@@ -87,7 +91,10 @@ class StochasticGradientMatrixFactorization(OverallBias):
             b_u, gamma_u = self.users[user]
             b_i, gamma_i = self.items[item]
             delta = self.overall_bias + b_u + b_i + np.dot(gamma_u, gamma_i) - rating
-            self.update_profiles(user, item, delta, b_u, b_i, gamma_u, gamma_i)
+            up.update_profiles_cy(self,user,item, delta, b_u, b_i, gamma_u, gamma_i)
+            #self.update_profiles(user, item, delta, b_u, b_i, gamma_u, gamma_i)
+
+
 
     def fit(self, training_reviews):
         u"""

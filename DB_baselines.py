@@ -48,12 +48,12 @@ def run_collaborative_filtering(training_reviews, validation_reviews, k, epochs,
 
 def run_all(filename, k, cf_epochs, cf_eta_0, cf_l2_weight):
     evaluation, training_reviews, validation_reviews = load_data(filename)
-    overall_bias = run_overall_bias(training_reviews)
-    print("RMSE overall bias: {} ".format(evaluation.evaluate(overall_bias)))
-    user_bias = run_user_bias(training_reviews)
-    print("RMSE user bias: {} ".format(evaluation.evaluate(user_bias)))
-    item_bias = run_item_bias(training_reviews)
-    print("RMSE item bias: {} ".format(evaluation.evaluate(item_bias)))
+    #overall_bias = run_overall_bias(training_reviews)
+    #print("RMSE overall bias: {} ".format(evaluation.evaluate(overall_bias)))
+    #user_bias = run_user_bias(training_reviews)
+    #print("RMSE user bias: {} ".format(evaluation.evaluate(user_bias)))
+    #item_bias = run_item_bias(training_reviews)
+    #print("RMSE item bias: {} ".format(evaluation.evaluate(item_bias)))
     colfil = run_collaborative_filtering(training_reviews, validation_reviews, k, cf_epochs, cf_eta_0, cf_l2_weight)
     print("RMSE item bias: {}".format(evaluation.evaluate(colfil)))
 
@@ -63,7 +63,7 @@ if __name__ == u"__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("db", type=str)
     parser.add_argument("--latent",default=5, type=float)
-    parser.add_argument("--epochs",default=100, type=float)
+    parser.add_argument("--epochs",default=100, type=int)
     parser.add_argument("--alpha",default=0.01, type=float)
     parser.add_argument("--reg", default=0.01, type=float)
     args = parser.parse_args()
