@@ -18,17 +18,21 @@ def getAllReviews(db, test=False):
     return c.fetchall()
 
 
-def k_sim(model, db,pond=True,solo=False,neg=False,kwords=0,log=False):
+def k_sim(model, db,pond=True,solo=False,neg=False,kwords=0,log=False,no_norm=False):
 
     print("prepping data")
 
     if neg:
         test_data = [(matutils.unitvec(model["i_{}".format(item)] - model["u_{}".format(user)]) ,matutils.unitvec(model["u_{}".format(user)]) ,matutils.unitvec(model["i_{}".format(item)]) , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
-
+    elif no_norm:
+        test_data = [(model["i_{}".format(item)] - model["u_{}".format(user)] ,model["u_{}".format(user)] ,model["i_{}".format(item)] , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
     else:
         test_data = [(matutils.unitvec(model["u_{}".format(user)] + model["i_{}".format(item)]) ,matutils.unitvec(model["u_{}".format(user)]) ,matutils.unitvec(model["i_{}".format(item)]) , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
 
-    rating_indexs = [(matutils.unitvec(model[word]), float(word.split("_")[1])) for word in model.index2word if len(word) > 2 and word[0] == "r" and word[1] == "_"]
+    if no_norm:
+        rating_indexs = [(model[word], float(word.split("_")[1])) for word in model.index2word if len(word) > 2 and word[0] == "r" and word[1] == "_"]
+    else:
+        rating_indexs = [(matutils.unitvec(model[word]), float(word.split("_")[1])) for word in model.index2word if len(word) > 2 and word[0] == "r" and word[1] == "_"]
 
     r_vec, ratings = zip(*rating_indexs)
     sum_vec,user_vec,item_vec, ground_truth = zip(*test_data)
@@ -95,7 +99,10 @@ def k_sim(model, db,pond=True,solo=False,neg=False,kwords=0,log=False):
             err = ((ratings[sum_args]+ratings[user_args]+ratings[item_args])/3 - ground_truth) ** 2
             print(np.mean(err))
     else:
-        sum_vec =[matutils.unitvec(np.sum(model.most_similar(vect, limit="words", topn=kwords,vect_only=True),axis=0)) for vect in sum_vec]
+        if no_norm:
+            sum_vec =[np.sum(model.most_similar(vect, limit="words", topn=kwords,vect_only=True),axis=0) for vect in sum_vec]
+        else:
+            sum_vec =[matutils.unitvec(np.sum(model.most_similar(vect, limit="words", topn=kwords,vect_only=True),axis=0)) for vect in sum_vec]
 
         if log:
             r_vec = np.nan_to_num(np.log(r_vec))
@@ -121,6 +128,7 @@ parser.add_argument("--solo",dest="solo",action="store_true")
 parser.add_argument("--neg",dest="neg",action="store_true")
 parser.add_argument("--kword",type=int,default=0)
 parser.add_argument("--log",dest="log",action="store_true")
+parser.add_argument("--no_norm", dest="no_norm", action="store_true")
 args = parser.parse_args()
 db = args.db
 pond = args.pond
@@ -128,6 +136,7 @@ solo = args.solo
 neg = args.neg
 log = args.log
 kwords = args.kword
+no_norm = args.no_norm
 model = R2VModel.from_w2v_text(args.model,binary=True)
 #model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model, db,pond,solo,neg,kwords,log)
+k_sim(model, db,pond,solo,neg,kwords,log,no_norm)
