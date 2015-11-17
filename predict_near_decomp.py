@@ -18,7 +18,7 @@ def getAllReviews(db, test=False):
     return c.fetchall()
 
 
-def k_sim(model, db,pond=True,solo=False,neg=False,kwords=0):
+def k_sim(model, db,pond=True,solo=False,neg=False,kwords=0,log=False):
 
     print("prepping data")
 
@@ -44,6 +44,13 @@ def k_sim(model, db,pond=True,solo=False,neg=False,kwords=0):
     item_vec = np.array(item_vec)
 
     if kwords <= 0:
+
+        if log:
+            r_vec = np.nan_to_num(np.log(r_vec))
+            sum_vec = np.nan_to_num(np.log(sum_vec))
+            user_vec = np.nan_to_num(np.log(user_vec))
+            item_vec = np.nan_to_num(np.log(item_vec))
+
         if solo:
             dp = np.dot(sum_vec,r_vec)
             sum_args = np.argmax(dp, axis=1)
@@ -89,6 +96,11 @@ def k_sim(model, db,pond=True,solo=False,neg=False,kwords=0):
             print(np.mean(err))
     else:
         sum_vec =[matutils.unitvec(np.sum(model.most_similar(vect, limit="words", topn=kwords,vect_only=True),axis=0)) for vect in sum_vec]
+
+        if log:
+            r_vec = np.nan_to_num(np.log(r_vec))
+            sum_vec = np.nan_to_num(np.log(sum_vec))
+
         dp = np.dot(sum_vec,r_vec)
         sum_args = np.argmax(dp, axis=1)
         print("sum(User + Item KWORDS) = Rating")
@@ -108,12 +120,14 @@ parser.add_argument("--pond",dest="pond",action="store_true")
 parser.add_argument("--solo",dest="solo",action="store_true")
 parser.add_argument("--neg",dest="neg",action="store_true")
 parser.add_argument("--kword",type=int,default=0)
+parser.add_argument("--log",dest="log",action="store_true")
 args = parser.parse_args()
 db = args.db
 pond = args.pond
 solo = args.solo
 neg = args.neg
+log = args.log
 kwords = args.kword
 model = R2VModel.from_w2v_text(args.model,binary=True)
 #model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model, db,pond,solo,neg,kwords)
+k_sim(model, db,pond,solo,neg,kwords,log)
