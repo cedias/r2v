@@ -4,6 +4,7 @@ from gensim.models.doc2vec import Doc2Vec
 import numpy as np
 from random import shuffle,randint
 from gensim import matutils
+from VectReco.R2VModel import R2VModel
 
 
 
@@ -17,7 +18,7 @@ def getAllReviews(db, test=False):
     return c.fetchall()
 
 
-def k_sim(model, db,pond=True,solo=False,neg=False):
+def k_sim(model, db,pond=True,solo=False,neg=False,kwords=0):
 
     print("prepping data")
 
@@ -42,50 +43,56 @@ def k_sim(model, db,pond=True,solo=False,neg=False):
     user_vec = np.array(user_vec)
     item_vec = np.array(item_vec)
 
+    if kwords <= 0:
+        if solo:
+            dp = np.dot(sum_vec,r_vec)
+            sum_args = np.argmax(dp, axis=1)
+            print("User + Item = Rating")
+            err = (ratings[sum_args] - ground_truth) ** 2
+            print(np.mean(err))
+
+        elif pond:
+            dp = np.dot(sum_vec,r_vec)
+
+            res = ratings[np.argmax(dp, axis=1)]*np.max(dp,axis=1)
+            sum_max  = np.max(dp,axis=1)
 
 
-    if solo:
-        dp = np.dot(sum_vec,r_vec)
-        sum_args = np.argmax(dp, axis=1)
-        print("User + Item = Rating")
-        err = (ratings[sum_args] - ground_truth) ** 2
-        print(np.mean(err))
+            dp = np.dot(user_vec,r_vec)
+            res += ratings[np.argmax(dp, axis=1)] * np.max(dp,axis=1)
+            sum_max  += np.max(dp,axis=1)
 
-    elif pond:
-        dp = np.dot(sum_vec,r_vec)
-
-        res = ratings[np.argmax(dp, axis=1)]*np.max(dp,axis=1)
-        sum_max  = np.max(dp,axis=1)
+            dp = np.dot(item_vec,r_vec)
+            res += ratings[np.argmax(dp, axis=1)]* np.max(dp,axis=1)
+            sum_max  += np.max(dp,axis=1)
 
 
-        dp = np.dot(user_vec,r_vec)
-        res += ratings[np.argmax(dp, axis=1)] * np.max(dp,axis=1)
-        sum_max  += np.max(dp,axis=1)
+            print("User rating + Item rating  + (user + item) rating = Rating - Cos Sim ponderation")
+            err = ((res/sum_max) - ground_truth) ** 2
+            print(np.mean(err))
 
-        dp = np.dot(item_vec,r_vec)
-        res += ratings[np.argmax(dp, axis=1)]* np.max(dp,axis=1)
-        sum_max  += np.max(dp,axis=1)
+        else:
+
+            dp = np.dot(sum_vec,r_vec)
+            sum_args = np.argmax(dp, axis=1)
+
+            dp = np.dot(user_vec,r_vec)
+            user_args = np.argmax(dp, axis=1)
+
+            dp = np.dot(item_vec,r_vec)
+            item_args = np.argmax(dp, axis=1)
 
 
-        print("User rating + Item rating  + (user + item) rating = Rating - Cos Sim ponderation")
-        err = ((res/sum_max) - ground_truth) ** 2
-        print(np.mean(err))
+            print("User rating + Item rating  + (user + item) rating = Rating - no ponderation")
 
+            err = ((ratings[sum_args]+ratings[user_args]+ratings[item_args])/3 - ground_truth) ** 2
+            print(np.mean(err))
     else:
-
+        sum_vec =[matutils.unitvec(np.sum(model.most_similar(vect, limit="words", topn=kwords,vect_only=True),axis=0)) for vect in sum_vec]
         dp = np.dot(sum_vec,r_vec)
         sum_args = np.argmax(dp, axis=1)
-
-        dp = np.dot(user_vec,r_vec)
-        user_args = np.argmax(dp, axis=1)
-
-        dp = np.dot(item_vec,r_vec)
-        item_args = np.argmax(dp, axis=1)
-
-
-        print("User rating + Item rating  + (user + item) rating = Rating - no ponderation")
-
-        err = ((ratings[sum_args]+ratings[user_args]+ratings[item_args])/3 - ground_truth) ** 2
+        print("sum(User + Item KWORDS) = Rating")
+        err = (ratings[sum_args] - ground_truth) ** 2
         print(np.mean(err))
 
     print("Random Baseline")
@@ -100,10 +107,13 @@ parser.add_argument("db", type=str)
 parser.add_argument("--pond",dest="pond",action="store_true")
 parser.add_argument("--solo",dest="solo",action="store_true")
 parser.add_argument("--neg",dest="neg",action="store_true")
+parser.add_argument("--kword",type=int,default=0)
 args = parser.parse_args()
 db = args.db
 pond = args.pond
 solo = args.solo
 neg = args.neg
-model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model, db,pond,solo,neg)
+kwords = args.kwords
+model = R2VModel.from_w2v_text(args.model,binary=True)
+#model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
+k_sim(model, db,pond,solo,neg,kwords)
