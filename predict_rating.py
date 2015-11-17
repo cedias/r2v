@@ -65,7 +65,7 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
         if cpt_test >= len(test_data)/2: # we only evaluate on random 50%
             break
 
-        if ("u_{}".format(user) not in model.vocab and neigh=="user") or ("i_{}".format(item) not in model.vocab and neigh=="item"): #skip not in vocab
+        if ("u_{}".format(user) not in model.vocab and neigh=="user") or ("i_{}".format(item) not in model.vocab and neigh=="item") or ("u_{}".format(user) not in model.vocab and "i_{}".format(item) not in model.vocab and neigh=="sum") : #skip not in vocab
             cpt_skipped += 1
             continue
 
@@ -73,6 +73,8 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
             vect = model["u_{}".format(user)]
         elif neigh=="item":
             vect = model["i_{}".format(item)]
+        elif neigh=="sum":
+            vect = model["i_{}".format(item)] + model["u_{}".format(user)]
         else:
             raise Exception("Neigh not item nor user")
 
@@ -89,6 +91,10 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
                 list_sims = [(sitem,srating-i_bias[sitem],np.dot(matutils.unitvec(model["i_{}".format(sitem)]),vect)) for sitem,srating,_ in getUserReviews(user, db) if "i_{}".format(sitem) in model.vocab]
             else:
                 list_sims = [(sitem,srating,np.dot(matutils.unitvec(model["i_{}".format(sitem)]),vect)) for sitem,srating,_ in getUserReviews(user, db) if "i_{}".format(sitem) in model.vocab]
+
+        elif neigh == "sum":
+                list_sims = [(suser,srating,np.dot(matutils.unitvec(model["u_{}".format(suser)]+model["i_{}".format(item)]),vect)) for suser,srating,_ in getItemReviews(item, db) if "u_{}".format(suser) in model.vocab]
+                list_sims += [(sitem,srating,np.dot(matutils.unitvec(model["i_{}".format(sitem)]+model["u_{}".format(user)]),vect)) for sitem,srating,_ in getUserReviews(user, db) if "i_{}".format(sitem) in model.vocab]
 
 
         if len(list_sims) == 0:
