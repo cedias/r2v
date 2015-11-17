@@ -65,7 +65,7 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
         if cpt_test >= len(test_data)/2: # we only evaluate on random 50%
             break
 
-        if ("u_{}".format(user) not in model.vocab and neigh=="user") or ("i_{}".format(item) not in model.vocab and neigh=="item") or ("u_{}".format(user) not in model.vocab and "i_{}".format(item) not in model.vocab and neigh=="sum") : #skip not in vocab
+        if ("u_{}".format(user) not in model.vocab and neigh=="user") or ("i_{}".format(item) not in model.vocab and neigh=="item") or (("u_{}".format(user) not in model.vocab or "i_{}".format(item) not in model.vocab) and neigh=="sum") : #skip not in vocab
             cpt_skipped += 1
             continue
 
