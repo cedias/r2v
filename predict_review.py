@@ -69,8 +69,8 @@ def rouge_1_2_3_metric(words_real,words_pred):
 
 def k_sim(model, db,neigh="user"):
 
-    if neigh not in {"user","item"}:
-        print("only {} as similarity".format(["user","item"]))
+    if neigh not in {"user","item","sum"}:
+        print("only {} as similarity".format(["user","item","sum"]))
 
     print("prepping data")
     test_data = [(item, user, rating) for item, user, rating in getAllReviews(db, test=True)]
