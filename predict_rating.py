@@ -42,8 +42,8 @@ def getItemsBias(db):
 
 def k_sim(model, db,k=None,neigh="user",mean_norm=False):
 
-    if neigh not in {"user","item"}:
-        print("only {} as similarity".format(["user","item"]))
+    if neigh not in {"user","item","sum"}:
+        print("only {} as similarity".format(["user","item","sum"]))
 
     print("prepping data")
     if mean_norm:
