@@ -113,7 +113,7 @@ db = args.db
 pond = args.pond
 solo = args.solo
 neg = args.neg
-kwords = args.kwords
+kwords = args.kword
 model = R2VModel.from_w2v_text(args.model,binary=True)
 #model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
 k_sim(model, db,pond,solo,neg,kwords)
