@@ -10,6 +10,7 @@ class R2VModel(object):
         self._buildIndexs()
         self.vocab = self.model.vocab
         self._cache = None
+        self.index2word = self.model.index2word
 
     def set_cache(self,nump):
         self._cache = nump
@@ -55,7 +56,7 @@ class R2VModel(object):
                 raise ValueError("Word {} not classified by indexer".format(word))
 
 
-    def most_similar(self,vect, limit="all", topn=100):
+    def most_similar(self,vect, limit="all", topn=100,vect_only=False):
         limits = {"all": True, "words": self.word_indexs, "sent": self.sent_indexs, "users": self.user_indexs,
                   "items": self.item_indexs, "rating": self.rating_indexs, "reviews": self.review_indexs}
 
@@ -82,7 +83,11 @@ class R2VModel(object):
             if topn is None:
                 return [(self.model.index2word[limits[limit][sim]], float(dist[sim])) for sim in best]
             else:
-                return [(self.model.index2word[limits[limit][sim]], float(dist[sim])) for sim in best][:topn]
+                if vect_only:
+                    return [self.model.syn0[limits[limit][sim]] for sim in best][:topn]
+                else:
+                    return [(self.model.index2word[limits[limit][sim]], float(dist[sim])) for sim in best][:topn]
+
 
 
     def most_similar_rating(self,vect):
