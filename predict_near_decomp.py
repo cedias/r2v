@@ -138,7 +138,7 @@ neg = args.neg
 log = args.log
 kwords = args.kword
 no_norm = args.no_norm
-train = args.train
+test = args.test
 model = R2VModel.from_w2v_text(args.model,binary=True)
 #model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model, db,pond,solo,neg,kwords,log,no_norm,train)
+k_sim(model, db,pond,solo,neg,kwords,log,no_norm,test)
