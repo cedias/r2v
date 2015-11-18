@@ -7,7 +7,6 @@ from gensim import matutils
 from VectReco.R2VModel import R2VModel
 
 
-
 def getAllReviews(db, test=False):
     con = sqlite3.connect(db)
     c = con.cursor()
@@ -18,16 +17,16 @@ def getAllReviews(db, test=False):
     return c.fetchall()
 
 
-def k_sim(model, db,pond=True,solo=False,neg=False,kwords=0,log=False,no_norm=False):
+def k_sim(model, db,pond=True,solo=False,neg=False,kwords=0,log=False,no_norm=False,test=True):
 
     print("prepping data")
 
     if neg:
-        test_data = [(matutils.unitvec(model["i_{}".format(item)] - model["u_{}".format(user)]) ,matutils.unitvec(model["u_{}".format(user)]) ,matutils.unitvec(model["i_{}".format(item)]) , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
+        test_data = [(matutils.unitvec(model["i_{}".format(item)] - model["u_{}".format(user)]) ,matutils.unitvec(model["u_{}".format(user)]) ,matutils.unitvec(model["i_{}".format(item)]) , float(rating)) for item, user, rating in getAllReviews(db, test=test) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
     elif no_norm:
-        test_data = [(model["i_{}".format(item)] - model["u_{}".format(user)] ,model["u_{}".format(user)] ,model["i_{}".format(item)] , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
+        test_data = [(model["i_{}".format(item)] - model["u_{}".format(user)] ,model["u_{}".format(user)] ,model["i_{}".format(item)] , float(rating)) for item, user, rating in getAllReviews(db, test=test) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
     else:
-        test_data = [(matutils.unitvec(model["u_{}".format(user)] + model["i_{}".format(item)]) ,matutils.unitvec(model["u_{}".format(user)]) ,matutils.unitvec(model["i_{}".format(item)]) , float(rating)) for item, user, rating in getAllReviews(db, test=True) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
+        test_data = [(matutils.unitvec(model["u_{}".format(user)] + model["i_{}".format(item)]) ,matutils.unitvec(model["u_{}".format(user)]) ,matutils.unitvec(model["i_{}".format(item)]) , float(rating)) for item, user, rating in getAllReviews(db, test=test) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
 
     if no_norm:
         rating_indexs = [(model[word], float(word.split("_")[1])) for word in model.index2word if len(word) > 2 and word[0] == "r" and word[1] == "_"]
@@ -129,6 +128,8 @@ parser.add_argument("--neg",dest="neg",action="store_true")
 parser.add_argument("--kword",type=int,default=0)
 parser.add_argument("--log",dest="log",action="store_true")
 parser.add_argument("--no_norm", dest="no_norm", action="store_true")
+parser.add_argument("--train", dest="test", action="store_false")
+
 args = parser.parse_args()
 db = args.db
 pond = args.pond
@@ -137,6 +138,7 @@ neg = args.neg
 log = args.log
 kwords = args.kword
 no_norm = args.no_norm
+train = args.train
 model = R2VModel.from_w2v_text(args.model,binary=True)
 #model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model, db,pond,solo,neg,kwords,log,no_norm)
+k_sim(model, db,pond,solo,neg,kwords,log,no_norm,train)
