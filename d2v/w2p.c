@@ -41,13 +41,13 @@ struct multi_word {
     long long iindex;   
 } typedef mword;
 
-char train_file[MAX_STRING], output_file[MAX_STRING];
+char train_file[MAX_STRING], output_file[1024];
 char save_vocab_file[MAX_STRING], read_vocab_file[MAX_STRING];
 struct vocab_word *vocab;
-int binary = 0, debug_mode = 2, window = 5, min_count = 1, num_threads = 12, min_reduce = 1, no_train=0;
+int binary = 0, debug_mode = 2, window = 5, min_count = 1, num_threads = 12, min_reduce = 1, no_train=0, multi=0;
 int *vocab_hash;
 long long vocab_max_size = 1000, vocab_size = 0, layer1_size = 100, sentence_vectors = 0;
-long long train_words = 0, word_count_actual = 0, iter = 5, file_size = 0, classes = 0;
+long long train_words = 0, word_count_actual = 0, iter = 5, nbIter=0 , file_size = 0, classes = 0;
 real alpha = 0.025, starting_alpha, sample = 1e-3;
 real *syn0, *syn1, *syn1neg, *expTable;
 clock_t start;
@@ -98,8 +98,8 @@ void InitUnigramTable() {
 // Reads a single word from a file, assuming space + tab + EOL to be word boundaries
 void ReadWord(char *word,mword *multi, FILE *fin) {
     int a = 0, ch, mw = 0;
-    char cpy[MAX_STRING] = "";
-    char ** cpyptr = &cpy;
+    //char cpy[MAX_STRING] = "";
+    char * cpyptr;// = &cpy;
     const char sep[2] = "~";
 
     while (!feof(fin)) {
@@ -124,8 +124,8 @@ void ReadWord(char *word,mword *multi, FILE *fin) {
 
                    //printf("entering: %s\n",word );
                    //strcpy(cpy,word); //backup debug
-                   strcpy(multi->user,strtok_r(word, sep, cpyptr));
-                   strcpy(multi->item,strtok_r(NULL, sep, cpyptr));
+                   strcpy(multi->user,strtok_r(word, sep, &cpyptr));
+                   strcpy(multi->item,strtok_r(NULL, sep, &cpyptr));
 
                    //printf("out user: %s - out item: %s\n",multi->user,multi->item );
 
@@ -450,12 +450,26 @@ void *TrainModelThread(void *id) {
             last_word_count = word_count;
 
                 now=clock();
-                printf("%cAlpha: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  ", 13, alpha,
-                word_count_actual / (real)(iter * train_words + 1) * 100,
-                word_count_actual / ((real)(now - start + 1) / (real)CLOCKS_PER_SEC * 1000));
-                fflush(stdout);
+
+                if(nbIter != 0){
+                    printf("%cAlpha: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  ", 13, alpha,
+                    word_count_actual / (real)(nbIter * train_words + 1) * 100,
+                    word_count_actual / ((real)(now - start + 1) / (real)CLOCKS_PER_SEC * 1000));
+                    fflush(stdout);
+
+                     alpha = starting_alpha * (1 - word_count_actual / (real)(nbIter * train_words + 1));
+                }
+                else
+                {
+                    printf("%cAlpha: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  ", 13, alpha,
+                    word_count_actual / (real)(iter * train_words + 1) * 100,
+                    word_count_actual / ((real)(now - start + 1) / (real)CLOCKS_PER_SEC * 1000));
+                    fflush(stdout);
+
+                     alpha = starting_alpha * (1 - word_count_actual / (real)(iter * train_words + 1));
+                }
             
-            alpha = starting_alpha * (1 - word_count_actual / (real)(iter * train_words + 1));
+           
 
             if (alpha < starting_alpha * 0.0001)
                 alpha = starting_alpha * 0.0001;
@@ -596,7 +610,7 @@ void *TrainModelThread(void *id) {
                             l2 = target * layer1_size;
                             f = 0;
                             for (c = 0; c < layer1_size; c++)
-                                f += sum[c] * syn1neg[c + l2];
+                                f += sum[c] * syn0[c + l2];
 
                             if (f > MAX_EXP)
                                 g = (label - 1) * alpha;
@@ -607,10 +621,10 @@ void *TrainModelThread(void *id) {
                                     g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
 
                             for (c = 0; c < layer1_size; c++)
-                                neu1e[c] += g * syn1neg[c + l2];
+                                neu1e[c] += g * syn0[c + l2];
 
-                            for (c = 0; c < layer1_size; c++)
-                                syn1neg[c + l2] += g * sum[c];
+                            // for (c = 0; c < layer1_size; c++)
+                            //     syn0[c + l2] += g * sum[c];
                         }
 
                     // Learn weights input -> hidden
@@ -651,7 +665,7 @@ void *TrainModelThread(void *id) {
                             l2 = target * layer1_size;
                             f = 0;
                             for (c = 0; c < layer1_size; c++)
-                                f += syn0[c + l1] * syn1neg[c + l2];
+                                f += syn0[c + l1] * syn0[c + l2];
 
                             if (f > MAX_EXP)
                                 g = (label - 1) * alpha;
@@ -661,9 +675,9 @@ void *TrainModelThread(void *id) {
                                 else 
                                     g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
                             for (c = 0; c < layer1_size; c++)
-                                neu1e[c] += g * syn1neg[c + l2];
-                            for (c = 0; c < layer1_size; c++)
-                                syn1neg[c + l2] += g * syn0[c + l1];
+                                neu1e[c] += g * syn0[c + l2];
+                            // for (c = 0; c < layer1_size; c++)
+                            //     syn0[c + l2] += g * syn0[c + l1];
                         }
 
                     // Learn weights input -> hidden
@@ -685,35 +699,12 @@ void *TrainModelThread(void *id) {
     pthread_exit(NULL);
 }
 
-void TrainModel() {
-    long a, b, c, d;
-    FILE *fo;
-    pthread_t *pt = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
-    printf("Starting training using file %s\n", train_file);
-    starting_alpha = alpha;
-    LearnVocabFromTrainFile();
+void saveModel(char* output_filename){
+ FILE *fo;
+ long a, b;
+ fo = fopen(output_filename, "wb");
 
-    printf("Vocab learned\n");
-    if (output_file[0] == 0)
-        return;
-
-    InitNet();
-
-    if (negative > 0)
-        InitUnigramTable();
-
-    start = clock();
-
-   //NOT TRAINING FOR DEBUG
-    if(!no_train){
-	    for (a = 0; a < num_threads; a++)
-		pthread_create(&pt[a], NULL, TrainModelThread, (void *)a);
-
-	    for (a = 0; a < num_threads; a++)
-		pthread_join(pt[a], NULL);
-    }
-    fo = fopen(output_file, "wb");
-
+    printf("\nSaving model to %s\n",output_filename);
     // Save the word vectors
     fprintf(fo, "%lld %lld\n", vocab_size, layer1_size);
 
@@ -733,6 +724,62 @@ void TrainModel() {
 
     fclose(fo);
 }
+
+
+void TrainModel() {
+    long a;
+    int i;
+    char pre_output[1024];
+    pthread_t *pt = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
+    printf("Starting training using file %s\n", train_file);
+    starting_alpha = alpha;
+
+    LearnVocabFromTrainFile();
+
+    printf("Vocab learned\n");
+    if (output_file[0] == 0)
+        return;
+
+    InitNet();
+
+    if (negative > 0)
+        InitUnigramTable();
+
+    start = clock();
+
+   //NOT TRAINING FOR DEBUG
+    if(!no_train && multi == 0){
+	    for (a = 0; a < num_threads; a++)
+		pthread_create(&pt[a], NULL, TrainModelThread, (void *)a);
+
+	    for (a = 0; a < num_threads; a++)
+		pthread_join(pt[a], NULL);
+    }
+
+    if(multi>0){
+        
+        nbIter = iter;
+        iter = 1; // Iterations are out of threads
+
+
+        for (i=0;i<nbIter;i++){
+
+            sprintf(pre_output, "%s_[i%d]", output_file, i);
+            saveModel(pre_output);
+            printf("Iteration %d on %lld\n",i+1,nbIter);
+            for (a = 0; a < num_threads; a++)
+                pthread_create(&pt[a], NULL, TrainModelThread, (void *)a);
+
+            for (a = 0; a < num_threads; a++)
+                pthread_join(pt[a], NULL);
+        }
+
+
+    }
+
+    saveModel(output_file);
+}
+
 
 int ArgPos(char *str, int argc, char **argv) {
     int a;
@@ -759,6 +806,8 @@ int main(int argc, char **argv) {
         printf("\t\tUse <file> to save the resulting word vectors / word clusters\n");
         printf("\t-size <int>\n");
         printf("\t\tSet size of word vectors; default is 100\n");
+        printf("\t-multi <int>\n");
+        printf("\t\tif 1, records network at every iterations; default 0\n");
         printf("\t-window <int>\n");
         printf("\t\tSet max skip length between words; default is 5\n");
         printf("\t-sample <float>\n");
@@ -796,6 +845,7 @@ int main(int argc, char **argv) {
     if ((i = ArgPos((char *)"-output", argc, argv)) > 0) strcpy(output_file, argv[i + 1]);
     if ((i = ArgPos((char *)"-window", argc, argv)) > 0) window = atoi(argv[i + 1]);
     if ((i = ArgPos((char *)"-notrain", argc, argv)) > 0) no_train = atoi(argv[i + 1]);
+    if ((i = ArgPos((char *)"-multi", argc, argv)) > 0) multi = atoi(argv[i + 1]);
     if ((i = ArgPos((char *)"-sample", argc, argv)) > 0) sample = atof(argv[i + 1]);
     if ((i = ArgPos((char *)"-negative", argc, argv)) > 0) negative = atoi(argv[i + 1]);
     if ((i = ArgPos((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);

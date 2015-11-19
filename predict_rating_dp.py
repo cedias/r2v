@@ -19,7 +19,7 @@ def getAllReviews(db, test=False):
 
 def k_sim(model, db,test=True):
 
-    print("prepping data")
+    #print("prepping data")
 
   
     test_data = [(matutils.unitvec(model["u_{}".format(user)] + model["i_{}".format(item)])  , float(rating)) for item, user, rating in getAllReviews(db, test=test) if "u_{}".format(user) in model.vocab and "i_{}".format(item) in model.vocab]
@@ -27,7 +27,7 @@ def k_sim(model, db,test=True):
     r_vec, ratings = zip(*rating_indexs)
     sum_vec, ground_truth = zip(*test_data)
 
-    print("{} data ready".format(len(test_data)))
+    #print("{} data ready".format(len(test_data)))
 
     ratings = np.array(ratings)
     ground_truth = np.array(ground_truth)
@@ -42,19 +42,18 @@ def k_sim(model, db,test=True):
     diff[np.where(diff != 0)] = 1
     acc = (len(diff) - np.sum(diff))/len(diff) * 100
 
-    print("({}) - MSE {} - ACC {}%".format(np.mean(err),acc))
+    return(mse,acc)
 
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
 
+    parser.add_argument("model", type=str)
+    parser.add_argument("db", type=str)
 
-parser = argparse.ArgumentParser()
+    args = parser.parse_args()
+    db = args.db
+    model = R2VModel.from_w2v_text(args.model,binary=True)
 
-parser.add_argument("model", type=str)
-parser.add_argument("db", type=str)
-parser.add_argument("--train", dest="test", action="store_false")
-
-args = parser.parse_args()
-db = args.db
-test = args.test
-model = R2VModel.from_w2v_text(args.model,binary=True)
-#model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-k_sim(model, db,test)
+    mse_train, acc_train = k_sim(model, db,False)
+    mse_test, acc_test = k_sim(model, db,True)
+    print("mse: {:.3f} acc: {:.3f}% (train) \nmse: {:.3f} acc: {:.3f}% (test)".format(mse_train,acc_train,mse_test,acc_test))

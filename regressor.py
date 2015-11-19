@@ -139,15 +139,15 @@ def k_sim(model, db, norm=False, conc=False, vtarget=False, bias=False):
     print("TEST  MSE: {}".format(get_multi_score(
         clf, test_vectors, test_labels, vtarget)))
 
-    for c in np.arange(0.1, 2, 0.1):
+    # for c in np.arange(1, 100, 1):
 
-        clf = linear_model.Ridge(alpha=c)
-        clf.fit(train_vectors, train_labels)
+    #     clf = linear_model.Ridge(alpha=c)
+    #     clf.fit(train_vectors, train_labels)
 
-        print("TRAIN MSE: {}".format(get_multi_score(
-            clf, train_vectors, train_labels, vtarget)))
-        print("TEST  MSE: {}".format(get_multi_score(
-            clf, test_vectors, test_labels, vtarget)))
+    #     print("TRAIN MSE: {}".format(get_multi_score(
+    #         clf, train_vectors, train_labels, vtarget)))
+    #     print("TEST  MSE: {}".format(get_multi_score(
+    #         clf, test_vectors, test_labels, vtarget)))
 
 
 parser = argparse.ArgumentParser()
