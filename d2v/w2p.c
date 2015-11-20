@@ -774,10 +774,14 @@ void TrainModel() {
                 pthread_join(pt[a], NULL);
         }
 
+        sprintf(pre_output, "%s_[i%lld]", output_file, nbIter);
+        saveModel(pre_output);
 
     }
-
-    saveModel(output_file);
+    else
+    {
+        saveModel(output_file);
+    }
 }
 
 
