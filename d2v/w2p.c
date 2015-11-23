@@ -47,7 +47,7 @@ struct vocab_word *vocab;
 int binary = 0, debug_mode = 2, window = 5, min_count = 1, num_threads = 12, min_reduce = 1, no_train=0, multi=0;
 int *vocab_hash;
 long long vocab_max_size = 1000, vocab_size = 0, layer1_size = 100, sentence_vectors = 0;
-long long train_words = 0, word_count_actual = 0, iter = 5, nbIter=0 , file_size = 0, classes = 0;
+long long train_words = 0, word_count_actual = 0, iter = 5, nbIter=0 ,numIter=0, file_size = 0, classes = 0;
 real alpha = 0.025, starting_alpha, sample = 1e-3;
 real *syn0, *syn1, *syn1neg, *expTable;
 clock_t start;
@@ -490,6 +490,7 @@ void *TrainModelThread(void *id) {
                     continue;
                 }
 
+
                 word_count++;
 
                 if (word == 0)
@@ -512,6 +513,17 @@ void *TrainModelThread(void *id) {
             }
 
             sentence_position = 0;
+        }
+
+        /*STOP WORD LEARNING*/
+        if (numIter > 0 && sentence_length > 2){
+            sentence_length =0;
+            continue;
+        }
+
+        if (numIter > 0 && sentence_length > 2 && sen[0] != -2){
+            sentence_length =0;
+            continue;
         }
 
         /*Local iter*/
@@ -772,6 +784,7 @@ void TrainModel() {
 
             for (a = 0; a < num_threads; a++)
                 pthread_join(pt[a], NULL);
+            numIter++;
         }
 
         sprintf(pre_output, "%s_[i%lld]", output_file, nbIter);
