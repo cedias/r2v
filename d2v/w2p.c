@@ -44,7 +44,8 @@ struct multi_word {
 char train_file[MAX_STRING], output_file[1024];
 char save_vocab_file[MAX_STRING], read_vocab_file[MAX_STRING];
 struct vocab_word *vocab;
-int binary = 0, debug_mode = 2, window = 5, min_count = 1, num_threads = 12, min_reduce = 1, no_train=0, multi=0;
+long long ratings_indexs[100];
+int binary = 0, debug_mode = 2, window = 5, min_count = 1, num_threads = 12, min_reduce = 1, no_train=0, multi=0, noWord = -1, onlyRating = -1,numRatings=0;
 int *vocab_hash;
 long long vocab_max_size = 1000, vocab_size = 0, layer1_size = 100, sentence_vectors = 0;
 long long train_words = 0, word_count_actual = 0, iter = 5, nbIter=0 ,numIter=0, file_size = 0, classes = 0;
@@ -222,7 +223,15 @@ int AddWordToVocab(char *word) {
     while (vocab_hash[hash] != -1)
         hash = (hash + 1) % vocab_hash_size;
 
+    
+
     vocab_hash[hash] = vocab_size - 1;
+
+    if(word[0]=='r' && word[1]=='_'){
+        ratings_indexs[numRatings] = vocab_hash[hash];
+        numRatings++;
+    }
+
     return vocab_size - 1;
 }
 
@@ -515,23 +524,15 @@ void *TrainModelThread(void *id) {
             sentence_position = 0;
         }
 
-        /*STOP WORD LEARNING*/
-        if (numIter > 0 && sentence_length > 2){
-            sentence_length =0;
-            continue;
-        }
-
-        if (numIter > 0 && sentence_length > 2 && sen[0] != -2){
-            sentence_length =0;
-            continue;
-        }
-
         /*Local iter*/
         if (feof(fi) || (word_count > train_words / num_threads)) {
             word_count_actual += word_count - last_word_count;
             local_iter--;
 
             if (local_iter == 0)
+                break;
+
+            if(nbIter != 0)
                 break;
 
             word_count = 0;
@@ -541,6 +542,17 @@ void *TrainModelThread(void *id) {
             while(fgetc (fi) != '\n'){
                 continue;
             }
+            continue;
+        }
+
+        /*STOP WORD LEARNING*/
+        if (noWord != -1 && numIter >= noWord && sentence_length > 2){
+            sentence_length =0;     
+            continue;
+        }
+
+        if (onlyRating != -1 && numIter >= onlyRating && sen[0] != -2){
+            sentence_length =0;
             continue;
         }
 
@@ -609,20 +621,28 @@ void *TrainModelThread(void *id) {
                                 label = 1;
                             } else {
 
-                                next_random = next_random * (unsigned long long)25214903917 + 11;
-                                target = table[(next_random >> 16) % table_size];
+                                if(sentence_length>2) {
+                                    next_random = next_random * (unsigned long long)25214903917 + 11;
+                                    target = table[(next_random >> 16) % table_size];
+                                }
+                                else{
+                                    next_random = next_random * (unsigned long long)25214903917 + 11;
+                                    target = ratings_indexs[(next_random >> 16) % numRatings];
+                                }
 
                                 if (target == 0)
                                     target = next_random % (vocab_size - 1) + 1;
 
                                 if (target == word)
                                     continue;
+
+
                                 label = 0;
                             }
                             l2 = target * layer1_size;
                             f = 0;
                             for (c = 0; c < layer1_size; c++)
-                                f += sum[c] * syn0[c + l2];
+                                f += sum[c] * syn1neg[c + l2];
 
                             if (f > MAX_EXP)
                                 g = (label - 1) * alpha;
@@ -632,11 +652,16 @@ void *TrainModelThread(void *id) {
                                 else 
                                     g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
 
-                            for (c = 0; c < layer1_size; c++)
-                                neu1e[c] += g * syn0[c + l2];
+                            
+                            //printf("%lld  -- %lld\n",l1,l2 );
 
-                            // for (c = 0; c < layer1_size; c++)
-                            //     syn0[c + l2] += g * sum[c];
+                            for (c = 0; c < layer1_size; c++)
+                                neu1e[c] += g * syn1neg[c + l2];
+
+                            for (c = 0; c < layer1_size; c++)
+                                syn1neg[c + l2] += g * syn0[c + l1];
+
+                
                         }
 
                     // Learn weights input -> hidden
@@ -663,8 +688,14 @@ void *TrainModelThread(void *id) {
                                 label = 1;
                             } else {
 
-                                next_random = next_random * (unsigned long long)25214903917 + 11;
-                                target = table[(next_random >> 16) % table_size];
+                                if(sentence_length>2) {
+                                    next_random = next_random * (unsigned long long)25214903917 + 11;
+                                    target = table[(next_random >> 16) % table_size];
+                                }
+                                else{
+                                    next_random = next_random * (unsigned long long)25214903917 + 11;
+                                    target = ratings_indexs[(next_random >> 16) % numRatings];
+                                }
 
                                 if (target == 0)
                                     target = next_random % (vocab_size - 1) + 1;
@@ -677,7 +708,7 @@ void *TrainModelThread(void *id) {
                             l2 = target * layer1_size;
                             f = 0;
                             for (c = 0; c < layer1_size; c++)
-                                f += syn0[c + l1] * syn0[c + l2];
+                                f += syn0[c + l1] * syn1neg[c + l2];
 
                             if (f > MAX_EXP)
                                 g = (label - 1) * alpha;
@@ -686,10 +717,12 @@ void *TrainModelThread(void *id) {
                                     g = (label - 0) * alpha;
                                 else 
                                     g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
+
+               
                             for (c = 0; c < layer1_size; c++)
-                                neu1e[c] += g * syn0[c + l2];
-                            // for (c = 0; c < layer1_size; c++)
-                            //     syn0[c + l2] += g * syn0[c + l1];
+                                neu1e[c] += g * syn1neg[c + l2];
+                            for (c = 0; c < layer1_size; c++)
+                                syn1neg[c + l2] += g * syn0[c + l1];
                         }
 
                     // Learn weights input -> hidden
@@ -787,6 +820,7 @@ void TrainModel() {
             numIter++;
         }
 
+
         sprintf(pre_output, "%s_[i%lld]", output_file, nbIter);
         saveModel(pre_output);
 
@@ -825,6 +859,10 @@ int main(int argc, char **argv) {
         printf("\t\tSet size of word vectors; default is 100\n");
         printf("\t-multi <int>\n");
         printf("\t\tif 1, records network at every iterations; default 0\n");
+        printf("\t-noword <int>\n");
+        printf("\t\tstops learning word vectors at iter <int>; default -1\n");
+        printf("\t-onlyrating <int>\n");
+        printf("\t\tlearns only sum vectors at iter <int>; default -1\n");
         printf("\t-window <int>\n");
         printf("\t\tSet max skip length between words; default is 5\n");
         printf("\t-sample <float>\n");
@@ -867,6 +905,8 @@ int main(int argc, char **argv) {
     if ((i = ArgPos((char *)"-negative", argc, argv)) > 0) negative = atoi(argv[i + 1]);
     if ((i = ArgPos((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
     if ((i = ArgPos((char *)"-iter", argc, argv)) > 0) iter = atoi(argv[i + 1]);
+    if ((i = ArgPos((char *)"-noword", argc, argv)) > 0) noWord = atoi(argv[i + 1]);
+    if ((i = ArgPos((char *)"-onlyrating", argc, argv)) > 0) onlyRating = atoi(argv[i + 1]);
     if ((i = ArgPos((char *)"-sentence-vectors", argc, argv)) > 0) sentence_vectors = atoi(argv[i + 1]);
 
     vocab = (struct vocab_word *)calloc(vocab_max_size, sizeof(struct vocab_word));
