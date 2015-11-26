@@ -87,9 +87,11 @@ def k_sim(model, db, test=True):
     err_user = np.mean((user - u_bias) ** 2)
     err_item = np.mean((item - i_bias) ** 2)
     err_sui = np.mean((ui_s - ground_truth) ** 2)
+    err_sum = np.mean(((avg+user+item+ui_s)/4 - ground_truth )**2)
 
-    print("avg {} + user {} + item {} + ui {}".format(err_avg,err_user,err_item,err_sui))
-    print("{}".format((err_avg+err_sui)/2))
+    #print("avg {} + user {} + item {} + ui {}".format(err_avg,err_user,err_item,err_sui))
+    #print("{}".format((err_avg+err_sui)/2))
+    print(err_sum)
     
     print("Random Baseline")
     err = (ratings[rand] - ground_truth) ** 2
