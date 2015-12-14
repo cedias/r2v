@@ -8,19 +8,17 @@ import pickle
 from sklearn.preprocessing import normalize
 
 def getItemReviews(item, db):
-    con = sqlite3.connect(db)
     c = con.cursor()
     c.execute("SELECT user,rating,review FROM reviews WHERE item = {} and not test".format(item))
     return c.fetchall()
 
 def getUserReviews(user, db):
-    con = sqlite3.connect(db)
+
     c = con.cursor()
     c.execute("SELECT item,rating,review FROM reviews WHERE user = {} and not test".format(user))
     return c.fetchall()
 
 def getAllReviews(db,test=False):
-    con = sqlite3.connect(db)
     c = con.cursor()
     if test:
         c.execute("SELECT item,user,rating FROM reviews WHERE test")
@@ -29,20 +27,31 @@ def getAllReviews(db,test=False):
     return c.fetchall()
 
 def getUsersBias(db):
-    con = sqlite3.connect(db)
     c = con.cursor()
     c.execute("SELECT user,avg(rating) as bias FROM reviews WHERE not test group by user")
     return c.fetchall()
 
 def getItemsBias(db):
-    con = sqlite3.connect(db)
     c = con.cursor()
     c.execute("SELECT item, avg(rating) as bias FROM reviews WHERE not test group by item")
     return c.fetchall()
 
+def init_sqlite_db(db):
+    # Read database to tempfile
+    con = sqlite3.connect(db)
+    tempfile = StringIO()
+    for line in con.iterdump():
+        tempfile.write('%s\n' % line)
+    con.close()
+    tempfile.seek(0)
+    # Create a database in memory and import from tempfile
+    db = sqlite3.connect(":memory:")
+    db.cursor().executescript(tempfile.read())
+    db.commit()
+    return db
 
 
-def k_sim(model, db,k=None,neigh="user",mean_norm=False):
+def k_sim(model, db,datak=None,neigh="user",mean_norm=False):
 
     if neigh not in {"user","item","sum"}:
         print("only {} as similarity".format(["user","item","sum"]))
@@ -54,8 +63,8 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
         elif neigh == "item":
             i_bias = {item:bias for item,bias in getItemsBias(db)}
 
-    test_data = [(item, user, rating) for item, user, rating in getAllReviews(db, test=True)]
-    shuffle(test_data)
+    test_data = data
+    
     print("test data ready")
 
     cpt_test = 0
@@ -63,9 +72,6 @@ def k_sim(model, db,k=None,neigh="user",mean_norm=False):
     tot_err = np.zeros(k)
 
     for item, user, rating in test_data:
-
-        if cpt_test >= len(test_data)/2: # we only evaluate on random 50%
-            break
 
         if ("u_{}".format(user) not in model.vocab and neigh=="user") or ("i_{}".format(item) not in model.vocab and neigh=="item") or (("u_{}".format(user) not in model.vocab or "i_{}".format(item) not in model.vocab) and neigh=="sum") : #skip not in vocab
             cpt_skipped += 1
@@ -170,21 +176,38 @@ parser.add_argument("--k",default=5, type=int)
 parser.add_argument("--neigh",default="item", type=str)
 parser.add_argument('--mean_center', dest='mean_center', action='store_true')
 parser.add_argument('--output', default="predicted_ratings.pkl",type=str)
+parser.add_argument('--validation',  dest='validation', action='store_true')
+parser.add_argument('--ram',  dest='ram', action='store_true')
 
 parser.add_argument("model", type=str)
 parser.add_argument("db", type=str)
+parser.add_argument("data", type=str)
 
 
 args = parser.parse_args()
-db = args.db
+
+if not ram:
+    db = sqlite3.connect(args.db)
+else:
+    db = init_sqlite_db(db)
+
+val,test = pickle.load(open(args.data,"rb"))
+
+
+if args.validation:
+    data = val
+else:
+    data = test
+
 model = Doc2Vec.load_word2vec_format(args.model, binary=True,norm_only=False)
-err = k_sim(model,db,k=args.k,neigh=args.neigh,mean_norm=args.mean_center)
+err = k_sim(model,db,data,to_ram=ram,k=args.k,neigh=args.neigh,mean_norm=args.mean_center)
 
 result = {
     "neigh":args.neigh,
     "mean_center":args.mean_center,
     "model":args.model,
     "db":args.db,
+    "validation":args.validation,
     "error":err
 }
 
