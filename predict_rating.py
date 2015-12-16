@@ -98,13 +98,13 @@ def k_sim(model, db,data,k=None,neigh="user",mean_norm=False):
 
 		vect = matutils.unitvec(vect)
 
-		if neigh == "user" or neigh == "CS":
+		if neigh == "user" or neigh == "CSu":
 			if mean_norm:
 				list_sims = [(suser,srating-u_bias[suser],model["u_{}".format(suser)]) for suser,srating,_ in getItemReviews(item, db) if "u_{}".format(suser) in model.vocab]
 			else:
 				list_sims = [(suser,srating,model["u_{}".format(suser)]) for suser,srating,_ in getItemReviews(item, db) if "u_{}".format(suser) in model.vocab]
 
-		elif neigh == "item":
+		elif neigh == "item" or neigh == "CSi":
 			if mean_norm:
 				list_sims = [(sitem,srating-i_bias[sitem],model["i_{}".format(sitem)]) for sitem,srating,_ in getUserReviews(user, db) if "i_{}".format(sitem) in model.vocab]
 			else:
