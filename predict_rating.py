@@ -61,8 +61,8 @@ def init_sqlite_db(db):
 
 def k_sim(model, db,data,k=None,neigh="user",mean_norm=False):
 
-	if neigh not in {"user","item","sum","CS"}:
-		print("only {} as similarity".format(["user","item","sum","CS"]))
+	if neigh not in {"user","item","sum","CSu","CSi"}:
+		print("only {} as similarity".format(["user","item","sum","CSu","CSi"]))
 
 	print("prepping data")
 	if mean_norm:
@@ -70,7 +70,7 @@ def k_sim(model, db,data,k=None,neigh="user",mean_norm=False):
 			u_bias = {user:bias for user,bias in getUsersBias(db)}
 		elif neigh == "item":
 			i_bias = {item:bias for item,bias in getItemsBias(db)}
-	if neigh == "CS":
+	if neigh == "CSu" or neigh == "CSi":
 		full_mean = getFullBias(db)
 
 	test_data = data
@@ -83,13 +83,13 @@ def k_sim(model, db,data,k=None,neigh="user",mean_norm=False):
 
 	for item, user, rating in test_data:
 
-		if ("u_{}".format(user) not in model.vocab and (neigh=="user" or neigh=="CS")) or ("i_{}".format(item) not in model.vocab and neigh=="item") or (("u_{}".format(user) not in model.vocab or "i_{}".format(item) not in model.vocab) and neigh=="sum") : #skip not in vocab
+		if ("u_{}".format(user) not in model.vocab and (neigh=="user" or neigh=="CSu")) or ("i_{}".format(item) not in model.vocab and (neigh=="item" or neigh=="CSi")) or (("u_{}".format(user) not in model.vocab or "i_{}".format(item) not in model.vocab) and neigh=="sum") : #skip not in vocab
 			cpt_skipped += 1
 			continue
 
-		if neigh=="user" or neigh == "CS":
+		if neigh=="user" or neigh == "CSu":
 			vect = model["u_{}".format(user)]
-		elif neigh=="item":
+		elif neigh=="item" or neigh == "CSi":
 			vect = model["i_{}".format(item)]
 		elif neigh=="sum":
 			vect = model["i_{}".format(item)] + model["u_{}".format(user)]
@@ -143,7 +143,7 @@ def k_sim(model, db,data,k=None,neigh="user",mean_norm=False):
 		sim_sim = sim_sim[:k]
 		sim_rating = sim_rating[:k]
 		
-		if neigh == "CS":
+		if neigh == "CSu" or neigh == "CSi":
 			sim_rating -= full_mean
 
 		pond = sim_rating * sim_sim
@@ -161,7 +161,7 @@ def k_sim(model, db,data,k=None,neigh="user",mean_norm=False):
 			elif neigh == "item":
 				predicted +=  i_bias[item]
 
-		if neigh == "CS":
+		if neigh == "CSu" or neigh == "CSi":
 			predicted += full_mean
 
 
