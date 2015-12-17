@@ -35,6 +35,7 @@ def main(args):
 
         for mc in [10,100,1000,2500,5000,7500]:
             classic_path += "[{}]".format(mc)
+            classic_model += "[{}]".format(mc)
             subprocess.call(["./d2v/d2v -train {} -sentence-vectors 1 -size 200 -window 5 -multi 1 -min-count 0 -sample 1e-5 -negative 5 -threads 6 -binary 1 -iter 10 -alpha 0.05 -output {}".format(classic_path,classic_model)],shell=True)
 
 parser = argparse.ArgumentParser()
