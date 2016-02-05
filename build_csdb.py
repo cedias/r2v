@@ -20,7 +20,7 @@ def main(args):
 
     db = groupby(lambda x: x[t],iterReviews(args.db))
 
-    big = keyfilter(lambda x:len(db[x])>=60,db)
+    big = keyfilter(lambda x:len(db[x])>=60,db) #whitelist
     test = {k:sample(v,30)for k,v in big.items()}
     train = keyfilter(lambda x:x not in big, db)
 

@@ -8,7 +8,7 @@ from sklearn.preprocessing import normalize
 from cytoolz import groupby
 import pickle as pkl
 import itertools
-
+from tqdm import tqdm
 
 
 
@@ -42,7 +42,7 @@ def k_sim(model, db,k=None,):
 
     err_mean = 0
 
-    for pid,uname,rating,rev in itertools.chain.from_iterable(test.values()):
+    for pid,uname,rating,rev in tqdm(list(itertools.chain.from_iterable(test.values()))):
 
 
 
@@ -109,13 +109,8 @@ def k_sim(model, db,k=None,):
             err[oldlen:k] = err[oldlen-1]
 
         tot_err += err
-
-
-
         cpt_test += 1
 
-        if cpt_test % 1000 == 0:
-            print("MSE at {} tests is {} - {} test cases where skipped - mean = {}".format(cpt_test,tot_err/(cpt_test+0.0),cpt_skipped,err_mean/cpt_test))
 
     print("Final MSE for {} tests is {} - {} test cases where skipped - mean = {}".format(cpt_test,tot_err/(cpt_test+0.0),cpt_skipped,err_mean/cpt_test))
     return tot_err/(cpt_test+0.0)
