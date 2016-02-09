@@ -9,6 +9,51 @@ from cytoolz import groupby
 import pickle as pkl
 import itertools
 from tqdm import tqdm
+from joblib import Parallel, delayed
+
+
+def build_heavy_loop(k,iu_dic,ui_dic,type_pred):
+    def heavy_loop(args):
+        pid,uname,rating,rev = args
+        try:
+            if type_pred=="user":
+                vect = model["u_{}".format(uname)]
+            else:
+                vect = model["i_{}".format(pid)]
+            vect = matutils.unitvec(vect)
+            if type_pred == "user" :
+                list_sims = [(suser,srating,model["u_{}".format(suser)]) for _,suser,srating,_ in iu_dic[pid]]
+            else:
+                list_sims = [(sitem,srating,model["i_{}".format(sitem)]) for sitem,_,srating,_ in ui_dic[uname]]
+        except:
+            return None
+            
+        sim_users,sim_rating,sim_sim = zip(*list_sims)
+        sim_rating = np.array(sim_rating)
+        sim_sim = np.array(sim_sim)
+        sim_sim = normalize(sim_sim, copy=False)
+        sim_sim = np.dot(vect,sim_sim.T)
+        sim_sim += 1
+        sim_sim /= 2.0
+        order = np.argsort(sim_sim)[::-1]
+        order = np.array(order)
+        sim_sim = sim_sim[order]
+        sim_rating = sim_rating[order]
+        sim_sim = sim_sim[:k]
+        sim_rating = sim_rating[:k]
+        pond = sim_rating * sim_sim
+        sum_rs = np.cumsum(pond)
+        sum_sim = np.cumsum(sim_sim)
+        predicted = sum_rs/(sum_sim+0.0)
+        err = (rating - predicted) ** 2
+        if len(err) != k:
+            oldlen = len(err)
+            err.resize(k,refcheck=False)
+            err[oldlen:k] = err[oldlen-1]
+
+        return err
+    return heavy_loop
+
 
 
 def k_sim(model, db,k=None,):
@@ -37,72 +82,15 @@ def k_sim(model, db,k=None,):
     cpt_test = 0
     cpt_skipped = 0
     tot_err = np.zeros(k)
-
     err_mean = 0
 
-    for pid,uname,rating,rev in tqdm(list(itertools.chain.from_iterable(test.values()))):
-        try:
+    loop_func = build_heavy_loop(k,iu_dic,ui_dic,type_pred)
 
-            if type_pred=="user":
-                vect = model["u_{}".format(uname)]
-            else:
-                vect = model["i_{}".format(pid)]
-            vect = matutils.unitvec(vect)
+    errs = [loop_func(t) for t in tqdm(list(itertools.chain.from_iterable(test.values())))]
 
-            if type_pred == "user" :
-                list_sims = [(suser,srating,model["u_{}".format(suser)]) for _,suser,srating,_ in iu_dic[pid]]
-            else:
-                list_sims = [(sitem,srating,model["i_{}".format(sitem)]) for sitem,_,srating,_ in ui_dic[uname]]
-        except:
-            cpt_skipped += 1
-            continue
-
-
-
-        sim_users,sim_rating,sim_sim = zip(*list_sims)
-        sim_rating = np.array(sim_rating)
-        sim_sim = np.array(sim_sim)
-
-        sim_sim = normalize(sim_sim, copy=False)
-        sim_sim = np.dot(vect,sim_sim.T)
-
-        sim_sim += 1
-        sim_sim /= 2.0
-        order = np.argsort(sim_sim)[::-1]
-
-
-
-        order = np.array(order)
-        sim_sim = sim_sim[order]
-        sim_rating = sim_rating[order]
-
-        sim_sim = sim_sim[:k]
-        sim_rating = sim_rating[:k]
-
-
-        pond = sim_rating * sim_sim
-
-        sum_rs = np.cumsum(pond)
-        sum_sim = np.cumsum(sim_sim)
-
-
-        predicted = sum_rs/(sum_sim+0.0)
-
-
-        err = (rating - predicted) ** 2
-        err_mean += (rating - mu) ** 2
-
-        if len(err) != k:
-            oldlen = len(err)
-            err.resize(k,refcheck=False)
-            err[oldlen:k] = err[oldlen-1]
-
-        tot_err += err
-        cpt_test += 1
-
-
-    print("Final MSE for {} tests is {} - {} test cases where skipped - mean = {}".format(cpt_test,tot_err/(cpt_test+0.0),cpt_skipped,err_mean/cpt_test))
-    return tot_err/(cpt_test+0.0)
+    final_error = np.mean([x for x in errs if x is not None],axis=0)
+    print(final_error)
+    return final_error
 
 
 parser = argparse.ArgumentParser()

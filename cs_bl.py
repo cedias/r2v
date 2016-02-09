@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 def k_sim(db):
 
-    train,test = db
+    train,_,test = db
     #(pid,uname,rating,rev)
 
     print("calcul moyenne générale train:")
